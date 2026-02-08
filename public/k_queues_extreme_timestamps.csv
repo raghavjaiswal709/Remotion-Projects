@@ -1,0 +1,25 @@
+Index,Start Time (s),End Time (s),Duration (s),Start Timestamp,End Timestamp,Character Count,Text
+1,0.000,7.182,7.182,00:00.000,00:07.182,111,The challenge of K queues is managing multiple independent queues within a single array without wasting memory.
+2,7.182,11.776,4.594,00:07.182,00:11.776,71,"If we use fixed partitioning, we divide the array into static segments."
+3,11.776,20.317,8.541,00:11.776,00:20.317,132,"This leads to a situation where one queue might be full and trigger an overflow error, while other segments remain completely empty."
+4,20.317,27.952,7.635,00:20.317,00:27.952,118,This is inefficient because we cannot utilize the available free space in other partitions to support a growing queue.
+5,27.952,34.487,6.535,00:27.952,00:34.487,101,"To solve this, we use a dynamic approach where any queue can occupy any available index in the array."
+6,34.487,40.828,6.341,00:34.487,00:40.828,98,We maintain the logical order of each queue using a linked representation within the array itself.
+7,40.828,44.904,4.076,00:40.828,00:44.904,63,We implement this using three auxiliary arrays and one pointer.
+8,44.904,48.268,3.365,00:44.904,00:48.268,52,The front array stores the head index of each queue.
+9,48.268,51.568,3.300,00:48.268,00:51.568,51,The rear array stores the last index of each queue.
+10,51.568,53.962,2.394,00:51.568,00:53.962,37,The next array serves a dual purpose.
+11,53.962,59.462,5.500,00:53.962,00:59.462,85,"For an occupied slot, it stores the index of the next element in that specific queue."
+12,59.462,64.056,4.594,00:59.462,01:04.056,71,"For an empty slot, it stores the index of the next available free slot."
+13,64.056,71.691,7.635,01:04.056,01:11.691,118,"Finally, the free pointer always points to the start of the free list, which is the chain of currently unused indices."
+14,71.691,75.120,3.429,01:11.691,01:15.120,53,"When performing an NQ, we do not look for a neighbor."
+15,75.120,79.391,4.270,01:15.120,01:19.391,66,We simply take the index currently pointed to by the free pointer.
+16,79.391,87.026,7.635,01:19.391,01:27.026,118,We then update the free pointer to the value stored in next at that index to move it to the subsequent available slot.
+17,87.026,93.043,6.017,01:27.026,01:33.043,93,We link this new index to the rear of the target queue and update the rear array accordingly.
+18,93.043,97.443,4.400,01:33.043,01:37.443,68,"During a DQ, we look at the front array to find the index to remove."
+19,97.443,103.395,5.953,01:37.443,01:43.395,92,We update the front to point to the next element in that queue's chain using the next array.
+20,103.395,105.725,2.329,01:43.395,01:45.725,36,The most critical step is recycling.
+21,105.725,113.813,8.088,01:45.725,01:53.813,125,We take the index we just emptied and link it back into the free list by pointing its next value to the current free pointer.
+22,113.813,117.889,4.076,01:53.813,01:57.889,63,And then updating the free pointer to this newly vacated index.
+23,117.889,121.965,4.076,01:57.889,02:01.965,63,This method ensures that every operation is constant time or O.
+24,121.965,134.000,12.035,02:01.965,02:14.000,186,"The system is perfectly efficient because as long as the free pointer is not negative one, any queue can continue to grow, regardless of where the data is physically stored in the array."

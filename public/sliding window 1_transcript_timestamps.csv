@@ -1,0 +1,14 @@
+Index,Start Time (s),End Time (s),Duration (s),Start Timestamp,End Timestamp,Character Count,Text
+1,0.000,3.680,3.680,00:00.000,00:03.680,61,Still recalculating arrays? That's why interviews reject you.
+2,4.080,7.940,3.860,00:04.080,00:07.940,76,"Day one of turning you into a logic monster. Today's weapon, sliding window."
+3,8.460,13.460,5.000,00:08.460,00:13.460,107,You're given an array. They ask for the max sum of three numbers. Most people panic. They re-ad everything.
+4,13.780,17.320,3.540,00:13.780,00:17.320,56,"Again, and again. That's slow and slow fails interviews."
+5,17.860,22.240,4.380,00:17.860,00:22.240,85,Here's the smarter way. Imagine a window on the array. It has a start. It has an end.
+6,22.820,26.420,3.600,00:22.820,00:26.420,69,"Now listen carefully. When the window moves, only two numbers matter."
+7,26.420,31.580,5.160,00:26.420,00:31.580,93,One number leaves. One number enters. That's it. So stop recalculating. Take the current sum.
+8,32.020,34.740,2.720,00:32.020,00:34.740,43,Subtract what left. Add what entered. Boom.
+9,35.620,40.020,4.400,00:35.620,00:40.020,94,New answer. The middle never changes. So don't touch it. This single trick changes everything.
+10,40.500,46.500,6.000,00:40.500,00:46.500,92,Time complexity drops from ON times K to ON. One pass. Zero waste. Fixed window. Same logic.
+11,46.900,51.340,4.440,00:46.900,00:51.340,79,Variable window. Same logic. Expand the front. Shrink the back. Track the best.
+12,51.340,54.940,3.600,00:51.340,00:54.940,67,Master this rhythm and half of array interviews are already solved.
+13,55.300,58.480,3.180,00:55.300,00:58.480,49,Sliding window pattern. Remember it. Use it. Win.

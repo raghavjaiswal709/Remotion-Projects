@@ -1,0 +1,36 @@
+Index,Start Time (s),End Time (s),Duration (s),Start Timestamp,End Timestamp,Character Count,Text
+1,0.000,2.080,2.080,00:00.000,00:02.080,45,"Before you scroll, this one saves interviews."
+2,2.620,4.720,2.100,00:02.620,00:04.720,53,Day four of turning you into a pattern first thinker.
+3,4.960,6.720,1.760,00:04.960,00:06.720,34,"Today's weapon, intervals pattern."
+4,7.180,10.400,3.220,00:07.180,00:10.400,54,"They give you ranges, meetings, time slots, schedules."
+5,11.000,12.620,1.620,00:11.000,00:12.620,37,"And then they ask, can these overlap?"
+6,13.060,13.660,0.600,00:13.060,00:13.660,19,Can you merge them?
+7,14.220,15.140,0.920,00:14.220,00:15.140,26,What's the minimum needed?
+8,15.820,16.500,0.680,00:15.820,00:16.500,19,Most people freeze.
+9,17.120,18.620,1.500,00:17.120,00:18.620,40,They compare everything with everything.
+10,19.220,21.900,2.680,00:19.220,00:21.900,45,"Nested loops, messy logic, instant rejection."
+11,22.520,23.360,0.840,00:22.520,00:23.360,21,Here's the clean way.
+12,23.900,25.580,1.680,00:23.900,00:25.580,31,"First rule, sort the intervals."
+13,26.540,28.300,1.760,00:26.540,00:28.300,29,"Always, now listen carefully."
+14,28.300,29.480,1.180,00:28.300,00:29.480,24,Take the first interval.
+15,29.800,30.640,0.840,00:29.800,00:30.640,27,That's your current window.
+16,30.860,31.660,0.800,00:30.860,00:31.660,21,Move to the next one.
+17,32.060,33.360,1.300,00:32.060,00:33.360,25,"If it overlaps, merge it."
+18,33.460,34.720,1.260,00:33.460,00:34.720,32,"If it doesn't, close the window."
+19,35.180,35.920,0.740,00:35.180,00:35.920,16,Start a new one.
+20,36.500,37.360,0.860,00:36.500,00:37.360,25,That's the whole pattern.
+21,38.060,41.300,3.240,00:38.060,00:41.300,66,Overlapping means next start is less than or equal to current end.
+22,41.800,44.020,2.220,00:41.800,00:44.020,44,Merging means update the end to the maximum.
+23,44.620,45.780,1.160,00:44.620,00:45.780,25,No comparisons explosion.
+24,46.300,46.900,0.600,00:46.300,00:46.900,13,No confusion.
+25,47.240,47.860,0.620,00:47.240,00:47.860,14,Just one pass.
+26,48.420,51.000,2.580,00:48.420,00:51.000,54,This turns your solution into O of N log N for sorting
+27,51.000,52.460,1.460,00:51.000,00:52.460,24,and O of N for the scan.
+28,53.240,54.900,1.660,00:53.240,00:54.900,29,"Interview clean, logic clean."
+29,55.400,56.640,1.240,00:55.400,00:56.640,31,This pattern solves everything.
+30,56.640,59.460,2.820,00:56.640,00:59.460,48,"Merge intervals, meeting rooms, insert interval,"
+31,59.800,60.700,0.900,00:59.800,01:00.700,17,employ free time.
+32,61.140,62.480,1.340,01:01.140,01:02.480,34,"Once you see intervals as windows,"
+33,62.920,64.420,1.500,01:02.920,01:04.420,35,half the problem is already solved.
+34,64.880,65.540,0.660,01:04.880,01:05.540,18,Intervals pattern.
+35,65.920,67.460,1.540,01:05.920,01:07.460,22,"Sort first, scan once,"
