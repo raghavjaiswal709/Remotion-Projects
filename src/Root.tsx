@@ -1,4 +1,4 @@
-import { registerRoot } from "remotion";
+import React from "react";
 import { Composition } from "remotion";
 import { Scene } from "./KQueues/Scene";
 import { TrionicArrayScene } from "./TrionicArray/Scene";
@@ -7,11 +7,20 @@ import TwoPointersScene from "./TwoPointers/Scene";
 import FastAndSlowScene from "./FastAndSlow/Scene";
 import IntervalsScene from "./Intervals/Scene";
 import MonotonicStackScene from "./MonotonicStack/Scene";
+import { Day23Scene } from "./Day23/Scene";
 import "./style.css";
 
 export const RemotionRoot: React.FC = () => {
   return (
     <>
+      <Composition
+        id="HiddenWorldDay23"
+        component={Day23Scene}
+        durationInFrames={2700} // 90 seconds * 30 fps
+        fps={30}
+        width={1080}
+        height={1920}
+      />
       <Composition
         id="KQueues"
         component={Scene}
