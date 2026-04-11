@@ -1,0 +1,77 @@
+{
+  // ── GitHub Copilot Agent Configuration ────────────────────────────────────
+  //
+  // PRIMARY INSTRUCTION FILE (read automatically by Copilot every session):
+  //   .github/copilot-instructions.md
+  //
+  // SINGLE DAY:   "Generate Day [N] from [AI | Java | HiddenWorld] series"
+  // MULTI-DAY:    "Generate Days [N1] through [N2] from [Series] series"
+  //               "Generate Days [N1], [N2], [N3] from [Series] series"
+  //
+  // For multi-day → Copilot follows PART 17 of copilot-instructions.md:
+  //   Phase 0: Re-read instructions
+  //   Phase 1: Discovery (all days)
+  //   Phase 2: Print full plan
+  //   Phase 3: Setup (copy audio, create folders)
+  //   Phase 4: Per-day loop (re-read → generate → checkpoint → re-read → ...)
+  //   Phase 5: Batch Root.tsx update
+  //   Phase 6: Final report
+
+  "github.copilot.chat.codeGeneration.instructions": [
+    {
+      "file": ".github/copilot-instructions.md"
+    },
+    {
+      "file": "src/Instructions/remotion-best-practices.md"
+    }
+  ],
+
+  "github.copilot.chat.reviewSelection.instructions": [
+    {
+      "file": ".github/copilot-instructions.md"
+    }
+  ],
+
+  // Always use instruction files for code generation context
+  "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+
+  // ── TypeScript ─────────────────────────────────────────────────────────────
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "typescript.suggest.autoImports": true,
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "typescript.tsdk": "node_modules/typescript/lib",
+
+  // ── Editor ─────────────────────────────────────────────────────────────────
+  "editor.formatOnSave": true,
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.wordWrap": "on",
+  "editor.rulers": [100],
+
+  // ── File associations ──────────────────────────────────────────────────────
+  "files.associations": {
+    "*.tsx": "typescriptreact",
+    "*.ts": "typescript"
+  },
+
+  // ── Exclude from search / file watcher ────────────────────────────────────
+  "search.exclude": {
+    "node_modules": true,
+    "out": true,
+    "build": true,
+    ".git": true
+  },
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/out/**": true,
+    "**/build/**": true
+  },
+
+  // ── Copilot inline suggestions ─────────────────────────────────────────────
+  "editor.inlineSuggest.enabled": true,
+  "github.copilot.editor.enableAutoCompletions": true,
+
+  // ── Useful for reviewing generated scene files ────────────────────────────
+  "editor.minimap.enabled": false,
+  "breadcrumbs.enabled": true
+}

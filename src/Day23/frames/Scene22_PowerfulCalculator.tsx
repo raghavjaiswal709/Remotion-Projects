@@ -106,9 +106,30 @@ export const Scene22_PowerfulCalculator: React.FC = () => {
           </div>
         </div>
 
+        {/* What it lacks */}
+        <div style={{
+          position: 'absolute', top: 1002, left: 80, right: 80,
+          display: 'flex', gap: 12,
+          opacity: interpolate(frame, [42, 66], [0, 1], { extrapolateRight: 'clamp' }),
+        }}>
+          {['No retry', 'No loop', 'No observation', 'No planning'].map((label, i) => (
+            <div key={i} style={{
+              flex: 1,
+              padding: '12px 6px',
+              background: 'rgba(239,68,68,0.07)',
+              border: '1.5px solid rgba(239,68,68,0.22)',
+              borderRadius: 10, textAlign: 'center',
+              fontSize: 20, color: '#EF4444', fontWeight: 700,
+              opacity: interpolate(frame, [42 + i * 5, 62 + i * 5], [0, 1], { extrapolateRight: 'clamp' }),
+            }}>
+              {label}
+            </div>
+          ))}
+        </div>
+
         {/* Comparison vs agent */}
         <div style={{
-          position: 'absolute', top: 1300, left: 80, right: 80,
+          position: 'absolute', top: 1108, left: 80, right: 80,
           display: 'flex', gap: 16,
           opacity: interpolate(frame, [55, 82], [0, 1], { extrapolateRight: 'clamp' }),
         }}>
@@ -139,6 +160,19 @@ export const Scene22_PowerfulCalculator: React.FC = () => {
                 · {t}
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Key insight */}
+        <div style={{
+          position: 'absolute', top: 1360, left: 80, right: 80,
+          opacity: interpolate(frame, [68, 86], [0, 1], { extrapolateRight: 'clamp' }),
+          background: 'linear-gradient(135deg, rgba(0,229,255,0.07) 0%, rgba(59,130,246,0.05) 100%)',
+          border: '2px solid rgba(0,229,255,0.22)',
+          borderRadius: 18, padding: '26px 36px', textAlign: 'center',
+        }}>
+          <div style={{ fontSize: 30, fontWeight: 700, color: COLORS.electric_cyan }}>
+            Add the loop — and the calculator becomes an agent.
           </div>
         </div>
 

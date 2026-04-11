@@ -63,7 +63,7 @@ export const Scene19_ModelFrozen: React.FC = () => {
         </svg>
 
         {/* Title */}
-        <div style={{ position: 'absolute', top: 120, left: 80, right: 80, textAlign: 'center', opacity: enter }}>
+        <div style={{ position: 'absolute', top: 88, left: 80, right: 80, textAlign: 'center', opacity: enter }}>
           <div style={{
             fontSize: 66, fontWeight: 900, color: COLORS.deep_black,
             fontFamily: '"Inter", sans-serif', letterSpacing: '-0.03em',
@@ -72,20 +72,68 @@ export const Scene19_ModelFrozen: React.FC = () => {
             <span style={{ color: '#A8D8EA' }}> Frozen</span>
           </div>
           <div style={{ fontSize: 30, color: COLORS.light_gray, marginTop: 10 }}>
-            After one step, it stops.
+            After one step, it stops completely.
           </div>
         </div>
 
-        {/* Callout */}
+        {/* Single-pass pipeline strip */}
         <div style={{
-          position: 'absolute', top: 1430, left: 80, right: 80,
-          opacity: interpolate(frame, [30, 50], [0, 1], { extrapolateRight: 'clamp' }),
-          background: 'rgba(168,216,234,0.08)',
-          border: '2px solid rgba(168,216,234,0.3)',
+          position: 'absolute', top: 308, left: 78, right: 78,
+          opacity: enter,
+          display: 'flex', alignItems: 'center', gap: 0,
+        }}>
+          {[
+            { label: 'INPUT', color: COLORS.warm_blue, bg: 'rgba(59,130,246,0.1)', border: 'rgba(59,130,246,0.3)' },
+            { label: '→', color: COLORS.light_gray, bg: 'transparent', border: 'transparent' },
+            { label: 'MODEL', color: '#A8D8EA', bg: 'rgba(168,216,234,0.1)', border: 'rgba(168,216,234,0.35)' },
+            { label: '→', color: COLORS.light_gray, bg: 'transparent', border: 'transparent' },
+            { label: 'OUTPUT', color: COLORS.electric_cyan, bg: 'rgba(0,229,255,0.08)', border: 'rgba(0,229,255,0.3)' },
+            { label: '→', color: COLORS.light_gray, bg: 'transparent', border: 'transparent' },
+            { label: '✗ STOP', color: '#EF4444', bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.35)' },
+          ].map((item, i) => (
+            <div key={i} style={{
+              flex: item.label.includes('→') ? 0 : 1,
+              padding: item.label.includes('→') ? '0 6px' : '14px 8px',
+              background: item.bg,
+              border: item.label.includes('→') ? 'none' : `1.5px solid ${item.border}`,
+              borderRadius: 10,
+              textAlign: 'center',
+            }}>
+              <div style={{
+                fontSize: item.label.includes('→') ? 28 : 20,
+                fontWeight: 800, color: item.color,
+                fontFamily: '"Inter", sans-serif',
+              }}>
+                {item.label}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Callout — moved higher */}
+        <div style={{
+          position: 'absolute', top: 1160, left: 80, right: 80,
+          opacity: interpolate(frame, [26, 48], [0, 1], { extrapolateRight: 'clamp' }),
+          background: 'rgba(168,216,234,0.07)',
+          border: '2px solid rgba(168,216,234,0.28)',
           borderRadius: 16, padding: '24px 32px', textAlign: 'center',
         }}>
           <div style={{ fontSize: 30, color: '#A8D8EA', fontWeight: 700 }}>
             It cannot continue. There is no next step.
+          </div>
+        </div>
+
+        {/* Secondary note */}
+        <div style={{
+          position: 'absolute', top: 1310, left: 80, right: 80,
+          opacity: interpolate(frame, [32, 52], [0, 1], { extrapolateRight: 'clamp' }),
+          background: 'rgba(239,68,68,0.06)',
+          border: '1.5px solid rgba(239,68,68,0.2)',
+          borderRadius: 14, padding: '20px 30px',
+        }}>
+          <div style={{ fontSize: 27, color: COLORS.light_gray, lineHeight: 1.65 }}>
+            No loop. No observation. No adaptation.
+            The model has done <span style={{ color: '#EF4444', fontWeight: 700 }}>exactly one thing</span>.
           </div>
         </div>
 

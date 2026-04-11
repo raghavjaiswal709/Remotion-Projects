@@ -37,22 +37,22 @@ export const Scene17_ModelAnswers: React.FC = () => {
           <polygon points="520,1255 540,1300 560,1255"
             fill={COLORS.warm_blue} opacity={modelEnter}/>
 
-          {/* Dead end marker */}
-          <line x1={440} y1={1420} x2={640} y2={1420}
+          {/* Dead end marker — below answer box (box ends ~1430) */}
+          <line x1={440} y1={1480} x2={640} y2={1480}
             stroke={COLORS.vibrant_red} strokeWidth={8} strokeLinecap="round"
             opacity={modelEnter}/>
-          <text x={540} y={1490} textAnchor="middle"
+          <text x={540} y={1546} textAnchor="middle"
             fontFamily="'Inter', sans-serif" fontSize={28} fontWeight={800}
             fill={COLORS.vibrant_red} opacity={modelEnter}>
             TRANSACTION ENDS
           </text>
 
-          {/* ProcessorUnit */}
+          {/* ProcessorUnit — center at cy=900, size=300 → spans y=750..1050 */}
           <ProcessorUnit cx={540} cy={900} size={300}
             opacity={modelEnter}
             scale={interpolate(frame, [15, 45], [0.7, 1], { extrapolateRight: 'clamp' })}
             variant="dormant" label="" frame={frame}/>
-          <text x={540} y={900} textAnchor="middle"
+          <text x={540} y={908} textAnchor="middle" dominantBaseline="middle"
             fontFamily="'Inter', sans-serif" fontSize={48} fontWeight={900}
             fill={COLORS.warm_blue} opacity={modelEnter}>MODEL</text>
         </svg>

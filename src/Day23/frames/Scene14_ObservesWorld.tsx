@@ -29,29 +29,29 @@ export const Scene14_ObservesWorld: React.FC = () => {
             opacity={globeEnter}
             scale={interpolate(frame, [20, 55], [0.7, 1], { extrapolateRight: 'clamp' })}/>
 
-          {/* Observation beam from robot eyes to world */}
+          {/* Observation beam from robot eyes to world — adjusted for cy=300 robot */}
           {beamEnter > 0 && (
             <>
-              <line x1={480} y1={610} x2={460} y2={980}
+              <line x1={490} y1={680} x2={470} y2={990}
                 stroke={COLORS.electric_cyan} strokeWidth={3}
                 strokeDasharray="12 8" opacity={beamEnter * 0.5}
                 filter="url(#cyanGlow)"/>
-              <line x1={600} y1={610} x2={620} y2={980}
+              <line x1={590} y1={680} x2={610} y2={990}
                 stroke={COLORS.electric_cyan} strokeWidth={3}
                 strokeDasharray="12 8" opacity={beamEnter * 0.5}
                 filter="url(#cyanGlow)"/>
-              {/* Attention nodes */}
+              {/* Attention nodes on beam */}
               {[1, 2, 3].map(i => (
                 <circle key={i}
-                  cx={480 + (i/4) * 120} cy={610 + (i/4) * 370}
+                  cx={490 + (i / 4) * 120} cy={680 + (i / 4) * 310}
                   r={8} fill={COLORS.electric_cyan}
                   opacity={beamEnter * (0.4 + Math.sin(frame * 0.15 + i) * 0.2)}/>
               ))}
             </>
           )}
 
-          {/* Robot */}
-          <AIRobot cx={540} cy={220} scale={enter} opacity={enter}
+          {/* Robot — cy=300 scale=0.88 → antenna≈225, head≈337, feet≈1006. Clears title (y≈180). */}
+          <AIRobot cx={540} cy={300} scale={enter * 0.88} opacity={enter}
             coreGlow={0.7} frame={frame} variant="active"/>
 
           {/* Effect indicators on world */}

@@ -1,87 +1,101 @@
 /**
  * Scene 24 — The Loop Is Everything
  * "The loop is everything."
- * Hero: Maximum impact — LOOP = EVERYTHING equation, cyan explosion, all elements glowing.
- * Duration: 47 frames (1.57s) — short punchy climax
+ * Maximum impact — LOOP · IS · EVERYTHING, explosion rings, radial rays.
+ * Uses BlackBackground so the dark look is actually rendered.
+ * Duration: 47 frames (1.57s)
  */
 import React from 'react';
 import { AbsoluteFill, useCurrentFrame, interpolate, Easing } from 'remotion';
 import { COLORS } from '../helpers/timing';
-import { PaperBackground, GlobalDefs } from '../helpers/components';
+import { BlackBackground, GlobalDefs } from '../helpers/components';
 
 const ease = Easing.bezier(0.22, 1, 0.36, 1);
 
 export const Scene24_LoopEverything: React.FC = () => {
   const frame = useCurrentFrame();
-  const enter = interpolate(frame, [0, 18], [0, 1], { extrapolateRight: 'clamp', easing: ease });
-  const textBoom = interpolate(frame, [8, 30], [0, 1], { extrapolateRight: 'clamp', easing: ease });
-  const pulse = Math.sin(frame * 0.3) * 0.05 + 1;
+  const enter   = interpolate(frame, [0, 18],  [0, 1], { extrapolateRight: 'clamp', easing: ease });
+  const textBoom= interpolate(frame, [6, 26],  [0, 1], { extrapolateRight: 'clamp', easing: ease });
+  const sub1    = interpolate(frame, [18, 36], [0, 1], { extrapolateRight: 'clamp', easing: ease });
+  const sub2    = interpolate(frame, [28, 44], [0, 1], { extrapolateRight: 'clamp' });
+  const pulse   = 1 + Math.sin(frame * 0.28) * 0.04;
+  const glow    = 0.7 + Math.sin(frame * 0.22) * 0.3;
 
   return (
     <AbsoluteFill>
-      {/* Black background for maximum drama */}
-      <div style={{ position: 'absolute', inset: 0, background: '#040406' }}/>
-      <PaperBackground>
+      <BlackBackground>
         <svg style={{ position: 'absolute', inset: 0 }} width={1080} height={1920}>
           <GlobalDefs/>
-          {/* Explosion rings */}
-          {[1,2,3,4].map(i => {
-            const r = interpolate(frame, [i * 3, 40], [0, 400 + i * 80], { extrapolateRight: 'clamp' });
+
+          {/* Expanding explosion rings */}
+          {[1, 2, 3, 4, 5].map(i => {
+            const r = interpolate(frame, [i * 2, 44], [0, 380 + i * 90], { extrapolateRight: 'clamp' });
             return (
               <circle key={i} cx={540} cy={960} r={r}
-                fill="none" stroke={COLORS.electric_cyan}
-                strokeWidth={5 - i}
-                opacity={enter * (0.5 / i)}
-                filter="url(#cyanGlow)"/>
+                fill="none"
+                stroke={COLORS.electric_cyan}
+                strokeWidth={Math.max(1, 5 - i + 0.5)}
+                opacity={enter * (0.55 / i)}
+                filter={i <= 2 ? 'url(#cyanGlow)' : undefined}/>
             );
           })}
-          {/* Radial lines */}
-          {Array.from({ length: 24 }).map((_, i) => {
-            const angle = (i * 15 * Math.PI) / 180;
-            const len = 240 + (i % 3) * 80;
-            const start = 200;
+
+          {/* Radial rays from center */}
+          {Array.from({ length: 30 }).map((_, i) => {
+            const angle = (i * 12 * Math.PI) / 180;
+            const startR = 180;
+            const endR   = startR + (220 + (i % 4) * 70) * enter;
             return (
               <line key={i}
-                x1={540 + Math.cos(angle) * start}
-                y1={960 + Math.sin(angle) * start}
-                x2={540 + Math.cos(angle) * (start + len * enter)}
-                y2={960 + Math.sin(angle) * (start + len * enter)}
+                x1={540 + Math.cos(angle) * startR}
+                y1={960 + Math.sin(angle) * startR}
+                x2={540 + Math.cos(angle) * endR}
+                y2={960 + Math.sin(angle) * endR}
                 stroke={COLORS.electric_cyan}
-                strokeWidth={2} opacity={0.2}/>
+                strokeWidth={1.5} opacity={0.18 * enter}/>
             );
           })}
-          {/* "EVERYTHING" large text */}
-          <text x={540} y={840}
+
+          {/* Center ambient glow */}
+          <circle cx={540} cy={960} r={170}
+            fill={COLORS.electric_cyan} opacity={enter * glow * 0.07}
+            filter="url(#cyanGlow)"/>
+
+          {/* LOOP */}
+          <text x={540} y={860}
             textAnchor="middle" dominantBaseline="middle"
             fontFamily="'Inter', sans-serif"
-            fontSize={130} fontWeight={900}
+            fontSize={180} fontWeight={900}
             fill={COLORS.electric_cyan}
-            letterSpacing="-0.05em"
+            letterSpacing="-0.06em"
             opacity={textBoom * pulse}
-            filter="url(#cyanGlow)">
+            filter="url(#strongCyanGlow)">
             LOOP
           </text>
-          <text x={540} y={990}
+
+          {/* IS EVERYTHING */}
+          <text x={540} y={1020}
             textAnchor="middle" dominantBaseline="middle"
             fontFamily="'Inter', sans-serif"
-            fontSize={72} fontWeight={900}
-            fill="#F5F0E8"
-            letterSpacing="-0.03em"
-            opacity={textBoom * 0.95}>
+            fontSize={84} fontWeight={900}
+            fill="#F0F4F8"
+            letterSpacing="-0.04em"
+            opacity={sub1 * 0.95}>
             IS EVERYTHING
           </text>
-          {/* Equation: LOOP = INTELLIGENCE */}
-          <text x={540} y={1120}
+
+          {/* Tagline */}
+          <text x={540} y={1140}
             textAnchor="middle" dominantBaseline="middle"
             fontFamily="'Inter', sans-serif"
-            fontSize={36} fontWeight={700}
+            fontSize={34} fontWeight={600}
             fill={COLORS.electric_cyan}
-            opacity={interpolate(frame, [28, 44], [0, 1], { extrapolateRight: 'clamp' }) * 0.85}
-            letterSpacing="0.05em">
+            letterSpacing="0.08em"
+            opacity={sub2 * 0.8}>
             LOOP · INTELLIGENCE · ACTION
           </text>
         </svg>
-      </PaperBackground>
+      </BlackBackground>
     </AbsoluteFill>
   );
 };

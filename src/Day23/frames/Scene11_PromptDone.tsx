@@ -146,7 +146,7 @@ export const Scene11_PromptDone: React.FC = () => {
 
         {/* Key point */}
         <div style={{
-          position: 'absolute', top: 1440, left: 80, right: 80,
+          position: 'absolute', top: 1200, left: 80, right: 80,
           opacity: interpolate(frame, [90, 125], [0, 1], { extrapolateRight: 'clamp' }),
           background: 'rgba(59,130,246,0.07)',
           border: '2px solid rgba(59,130,246,0.2)',
@@ -156,6 +156,34 @@ export const Scene11_PromptDone: React.FC = () => {
             The model doesn't watch what happens next.
             It doesn't adjust. It doesn't revisit.
             <span style={{ color: COLORS.warm_blue, fontWeight: 700 }}> The transaction is over.</span>
+          </div>
+        </div>
+
+        {/* Model vs Agent contrast */}
+        <div style={{
+          position: 'absolute', top: 1440, left: 80, right: 80,
+          display: 'flex', gap: 14,
+          opacity: interpolate(frame, [108, 132], [0, 1], { extrapolateRight: 'clamp' }),
+        }}>
+          <div style={{
+            flex: 1, background: 'rgba(239,68,68,0.06)',
+            border: '1.5px solid rgba(239,68,68,0.2)', borderRadius: 14,
+            padding: '18px 22px',
+          }}>
+            <div style={{ fontSize: 20, color: '#EF4444', fontWeight: 800, marginBottom: 8 }}>MODEL</div>
+            {['1 prompt → 1 response', 'No loop', 'No memory'].map((t, i) => (
+              <div key={i} style={{ fontSize: 22, color: '#906060', marginBottom: 4 }}>· {t}</div>
+            ))}
+          </div>
+          <div style={{
+            flex: 1, background: 'rgba(0,229,255,0.06)',
+            border: '1.5px solid rgba(0,229,255,0.2)', borderRadius: 14,
+            padding: '18px 22px',
+          }}>
+            <div style={{ fontSize: 20, color: COLORS.electric_cyan, fontWeight: 800, marginBottom: 8 }}>AGENT</div>
+            {['Loops continuously', 'Observes results', 'Adapts approach'].map((t, i) => (
+              <div key={i} style={{ fontSize: 22, color: '#408088', marginBottom: 4 }}>· {t}</div>
+            ))}
           </div>
         </div>
 
