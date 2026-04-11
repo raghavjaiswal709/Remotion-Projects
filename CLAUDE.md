@@ -8,23 +8,24 @@
 
 ## QUICK DAILY TRIGGER
 
-### Single day
-Tell Claude: **"Generate Day [N] from [AI | Java | HiddenWorld] series"**
+```
+ACCEPTED COMMANDS:
+  "Generate Day 28 from AI series"
+  "Generate Days 28 through 31 from AI series"
+  "Generate Days 28, 29, 30 from Java series"
+  "Generate Day 12 from HiddenWorld series"
+```
 
-### Multiple days (batch)
-Tell Claude: **"Generate Days [N1] through [N2] from [Series] series"**
-Or: **"Generate Days [N1], [N2], [N3] from [Series] series"**
+**On receiving any command → execute immediately. Zero questions. Zero confirmations.**
+All ambiguity resolved using PART 17 AMBIGUITY TABLE in `.github/copilot-instructions.md`.
+Every file is chunk-based (PART 18). Every chunk starts with a full instruction re-read.
 
-**For multi-day batch:** Follow `.github/copilot-instructions.md → PART 17` exactly.
-This means: Plan first → re-read instructions before each day → no stopping between days.
-
-### Single day workflow
-Claude will:
-1. Read architecture file → get Day N topic + Day N+1 topic
-2. Stage the audio file into `public/audio/` (see bottleneck fix §2 below)
-3. Read the CSV transcript end-to-end
-4. Generate all `src/Day{N}/` files following `.github/copilot-instructions.md`
-5. Update `src/Root.tsx`
+### Execution sequence
+1. PART 17 → autonomy rules + ambiguity table
+2. PART 18 → chunk execution map (re-read before every chunk)
+3. PART 19 → multi-day batch protocol (if multiple days)
+4. Generate all days in command completely without stopping
+5. Update `src/Root.tsx` once at the very end
 
 ---
 
@@ -321,23 +322,28 @@ Usable width: 960px
 
 ---
 
-## MULTI-DAY BATCH RULES (summary — full rules in .github/copilot-instructions.md PART 17)
+## AUTONOMY RULES (summary — full rules in .github/copilot-instructions.md PART 17 + 18 + 19)
 
 | Rule | Detail |
 |---|---|
-| Print plan first | Before any code: print full plan for all days |
-| Re-read before each day | `.github/copilot-instructions.md` + `remotion-best-practices.md` + CSV |
-| No stopping between days | Generate all days without asking for confirmation |
+| Zero questions | Never ask anything — use PART 17 ambiguity table |
+| Zero confirmations | Never wait for user input between days or chunks |
+| Plan before code | Print full plan (PART 19 Phase 2 template) before any file |
+| Chunk-based writing | Max 5 content scenes per chunk (PART 18) |
+| Re-read before EVERY chunk | Full instruction re-read, not summary from memory |
 | Completion checkpoint | Print `✅ DAY N COMPLETE` marker after each day |
-| Root.tsx update | Once, after ALL days are done — not per-day |
+| Root.tsx once | Single update after ALL days — never per-day |
 | Final report | Print summary table after Root.tsx update |
+| Fix, don't ask | If error/ambiguity — fix using the rules, never pause |
 
-**Anti-drift checklist (run mentally before each day):**
-- [ ] Re-read instructions file (not from memory)
-- [ ] Re-read CSV for THIS day specifically
-- [ ] Re-check next-day topic from architecture file
-- [ ] Remember: Audio in `<Sequence from={150}>`, never `from={0}`
-- [ ] Remember: `PaperBackground` is FIRST in every scene's SVG
+**Anti-drift checklist (enforced before every chunk, not just every day):**
+- [ ] Re-read `.github/copilot-instructions.md` (full file, not memory)
+- [ ] Re-read `src/Instructions/remotion-best-practices.md`
+- [ ] Re-read CSV phrases for the current chunk's scenes
+- [ ] Confirm: Audio in `<Sequence from={150}>`, never `from={0}`
+- [ ] Confirm: `PaperBackground` is FIRST SVG child in every scene
+- [ ] Confirm: Caption at `y=1780`, no background rect
+- [ ] Confirm: No gradient, no emoji, no CSS animation anywhere
 
 ---
 

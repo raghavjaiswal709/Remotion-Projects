@@ -2,23 +2,29 @@
 
 ## HOW TO TRIGGER VIDEO GENERATION
 
-### Single day
-Say: **"Generate Day [N] from [AI | Java | HiddenWorld] series"**
+```
+COMMAND FORMAT — accepted inputs:
 
-### Multiple days (batch)
-Say: **"Generate Days [N1] through [N2] from [AI | Java | HiddenWorld] series"**
-Or: **"Generate Days [N1], [N2], [N3] from [AI | Java | HiddenWorld] series"**
+  Single day:   "Generate Day 28 from AI series"
+  Range:        "Generate Days 28 through 31 from AI series"
+  List:         "Generate Days 28, 30, 32 from AI series"
+  Java:         "Generate Day 5 from Java series"
+  HiddenWorld:  "Generate Day 12 from HiddenWorld series"
 
-When generating multiple days → follow **PART 17 — MULTI-DAY BATCH PROTOCOL** first.
-It defines the mandatory planning phase and the per-day re-read loop.
+After receiving ANY of these commands:
+  1. Do NOT ask any question
+  2. Do NOT ask for confirmation
+  3. Follow PART 17 (autonomy rules) immediately
+  4. Follow PART 18 (chunk execution map) for every file
+  5. For multi-day: follow PART 19 (batch protocol) for sequencing
+  6. Complete ALL days in the command without stopping
+```
 
-### Single day workflow
-Copilot will:
-1. Read the architecture file for Day N context + Day N+1 topic
-2. Locate the correct audio file and copy it to `public/audio/` if needed
-3. Read the CSV transcript completely
-4. Generate all files for `src/Day{N}/`
-5. Update `src/Root.tsx`
+**The agent's ONLY valid response to a generation command is to start executing.**
+No clarifying questions. No "just to confirm" messages. No "before I begin" checks with the user.
+All ambiguity is resolved using the AMBIGUITY TABLE in PART 17.
+
+---
 
 ---
 
@@ -488,34 +494,93 @@ export const Day{N}Scene: React.FC = () => {
 
 ## PART 8 — SCENE BOILERPLATE (every content scene follows this)
 
+> **MINIMUM 300 LINES PER SCENE FILE — this is a hard requirement. See PART 20 for detail.**
+> Every scene must have ≥ 3 animation phases and spring physics on every major element.
+
 ```tsx
 /**
  * Scene {N} — {Scene Name}
  * "{Exact spoken phrase from CSV}"
  * CSV: {start_time}s → {end_time}s
  * Duration: {frames} frames ({seconds}s)
+ *
+ * Animation phases:
+ *   Phase 1 (frames 0–30):   Scene reveal — paper lifts, section label slides in, headline springs up
+ *   Phase 2 (frames 20–90):  Core content builds — each element staggered by 12 frames, path-draw for diagrams
+ *   Phase 3 (frames 80–end): Steady-state micro-animations — pulse, float, counter tick, connector draw
  */
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame, interpolate, Easing } from 'remotion';
+import {
+  AbsoluteFill,
+  useCurrentFrame,
+  interpolate,
+  spring,
+  Easing,
+} from 'remotion';
 import { COLORS, SCENE_TIMING, CAPTIONS, ease, snapIn } from '../helpers/timing';
 import { PaperBackground, GlobalDefs, Caption, SectionLabel } from '../helpers/components';
 
+// ─── Easing presets (use these, do not inline magic numbers) ──────────────────
+const SPRING_CONFIG = { damping: 18, stiffness: 180, mass: 0.8 } as const;
+const SPRING_SOFT   = { damping: 22, stiffness: 120, mass: 1.0 } as const;
+const SPRING_SNAP   = { damping: 12, stiffness: 260, mass: 0.6 } as const;
+
+// ─── Helper: spring-based opacity + translateY entrance ──────────────────────
+function useSpringEntrance(frame: number, delayFrames: number, fps = 30) {
+  const f = Math.max(0, frame - delayFrames);
+  const progress = spring({ frame: f, fps, config: SPRING_CONFIG });
+  const opacity  = interpolate(f, [0, 12], [0, 1], { extrapolateRight: 'clamp', easing: ease });
+  const translateY = interpolate(progress, [0, 1], [32, 0]);
+  return { progress, opacity, translateY };
+}
+
+// ─── Helper: path-draw animation (strokeDashoffset reveal) ───────────────────
+function usePathDraw(frame: number, startFrame: number, totalLength: number, durationFrames = 30) {
+  const progress = interpolate(frame, [startFrame, startFrame + durationFrames], [0, 1], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+    easing: Easing.bezier(0.4, 0, 0.2, 1),
+  });
+  return totalLength * (1 - progress); // dashoffset value
+}
+
+// ─── Helper: animated counter (integer tick-up) ──────────────────────────────
+function useCounter(frame: number, startFrame: number, endValue: number, durationFrames = 45) {
+  const raw = interpolate(frame, [startFrame, startFrame + durationFrames], [0, endValue], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+    easing: Easing.out(Easing.cubic),
+  });
+  return Math.round(raw);
+}
+
 export const Scene{N}_{Name}: React.FC = () => {
   const frame = useCurrentFrame();  // LOCAL frame (0-based inside this Sequence)
+  const fps   = 30;
 
-  // Entrance animations — always use extrapolateRight: 'clamp'
-  const enter = interpolate(frame, [0, 20], [0, 1], {
-    extrapolateRight: 'clamp',
-    easing: ease,
-  });
+  // ── Phase 1: Scene reveal (frames 0–30) ────────────────────────────────────
+  const sceneReveal   = spring({ frame, fps, config: SPRING_SOFT });
+  const labelEntrance = useSpringEntrance(frame, 0);
+  const headlineA     = useSpringEntrance(frame, 6);
+  const headlineB     = useSpringEntrance(frame, 12);
 
-  // For staggered elements (offset each by 8 frames):
-  // const item1 = interpolate(frame, [0, 18],  [0, 1], { extrapolateRight: 'clamp', easing: ease });
-  // const item2 = interpolate(frame, [8, 26],  [0, 1], { extrapolateRight: 'clamp', easing: ease });
-  // const item3 = interpolate(frame, [16, 34], [0, 1], { extrapolateRight: 'clamp', easing: ease });
+  // ── Phase 2: Content build (stagger every 12 frames) ──────────────────────
+  const card1 = useSpringEntrance(frame, 24);
+  const card2 = useSpringEntrance(frame, 36);
+  const card3 = useSpringEntrance(frame, 48);
+  const card4 = useSpringEntrance(frame, 60);
 
-  // Slide-up for titles:
-  // const slideY = interpolate(frame, [0, 22], [28, 0], { extrapolateRight: 'clamp', easing: ease });
+  // ── Path draw (diagram connectors) ────────────────────────────────────────
+  const connectorLength = 200; // measure real SVG path length
+  const connectorDash   = usePathDraw(frame, 40, connectorLength, 25);
+
+  // ── Phase 3: Micro-animations (steady-state) ──────────────────────────────
+  const breathe    = Math.sin(frame * 0.06) * 4;           // gentle float ±4px
+  const pulse      = 1 + Math.sin(frame * 0.08) * 0.015;  // scale pulse
+  const shimmer    = interpolate(Math.sin(frame * 0.04), [-1, 1], [0.85, 1]); // opacity shimmer
+
+  // ── Counter animation ──────────────────────────────────────────────────────
+  const counterValue = useCounter(frame, 50, 97, 40); // tick 0→97 over 40 frames
 
   const caption = CAPTIONS.find(c => c.from === SCENE_TIMING.s{N}.from);
 
@@ -527,27 +592,86 @@ export const Scene{N}_{Name}: React.FC = () => {
         <PaperBackground />
         <GlobalDefs />
 
-        {/* ZONE A — Topic anchor label (y=80–180) */}
-        <SectionLabel text="MODULE NAME · CONCEPT" y={120} opacity={enter * 0.55} />
+        {/* ── ZONE A — Topic anchor label (y=80–180) ─────────────────────── */}
+        <g transform={`translate(0, ${labelEntrance.translateY})`} opacity={labelEntrance.opacity}>
+          <SectionLabel text="MODULE NAME · CONCEPT" y={120} opacity={0.55} />
+        </g>
 
-        {/* ZONE B — Primary statement (y=190–440) */}
-        <text
-          x={60} y={260}
-          fontFamily="'Inter', system-ui, sans-serif"
-          fontSize={72} fontWeight={800}
-          fill={COLORS.deep_black}
-          opacity={enter}
+        {/* ── ZONE B — Primary statement (y=190–440) ─────────────────────── */}
+        <g transform={`translate(0, ${headlineA.translateY})`} opacity={headlineA.opacity}>
+          <text
+            x={60} y={270}
+            fontFamily="'Inter', system-ui, sans-serif"
+            fontSize={72} fontWeight={800}
+            fill={COLORS.deep_black}
+          >
+            Main Headline
+          </text>
+        </g>
+        <g transform={`translate(0, ${headlineB.translateY})`} opacity={headlineB.opacity}>
+          <text
+            x={60} y={370}
+            fontFamily="'Inter', system-ui, sans-serif"
+            fontSize={48} fontWeight={400}
+            fill={COLORS.sky_blue}
+          >
+            Supporting sub-line
+          </text>
+        </g>
+
+        {/* ── ZONE C — Main visual content (y=460–1700) ──────────────────── */}
+        {/*
+          Render complex diagrams, cards, path-draw connectors, counters here.
+          Each major element wrapped in <g opacity={cardN.opacity} transform={...translateY...}>
+          NEVER use position: absolute on child elements inside SVG.
+          VERIFY bounding boxes don't overlap (pen-test each card's rect).
+        */}
+
+        {/* Example: animated card with spring entrance */}
+        <g
+          opacity={card1.opacity}
+          transform={`translate(60, ${460 + card1.translateY})`}
         >
-          Main Headline
-        </text>
-        {/* For long headlines, break into multiple <text> at y=260, y=348, y=436 */}
+          <rect
+            x={0} y={0} width={960} height={160} rx={16}
+            fill={COLORS.sky_blue} fillOpacity={0.08}
+            stroke={COLORS.sky_blue} strokeWidth={2}
+          />
+          <text x={40} y={92} fontFamily="'Inter', sans-serif" fontSize={36} fontWeight={700} fill={COLORS.deep_black}>
+            Card One Content
+          </text>
+        </g>
 
-        {/* ZONE C — Main visual content (y=460–1700) */}
-        {/* Use SVG shapes, paths, text elements */}
-        {/* NEVER use position: absolute on child elements inside SVG */}
-        {/* VERIFY bounding boxes don't overlap */}
+        {/* Example: SVG path-draw connector */}
+        <path
+          d="M 540,660 L 540,860"
+          fill="none"
+          stroke={COLORS.green}
+          strokeWidth={3}
+          strokeDasharray={connectorLength}
+          strokeDashoffset={connectorDash}
+          strokeLinecap="round"
+        />
 
-        {/* CAPTION ZONE — FIXED POSITION, NO BACKGROUND */}
+        {/* Example: counter display */}
+        <g opacity={card2.opacity} transform={`translate(540, ${900 + card2.translateY})`}>
+          <text
+            textAnchor="middle"
+            fontFamily="'Inter', sans-serif" fontSize={120} fontWeight={900}
+            fill={COLORS.orange}
+          >
+            {counterValue}%
+          </text>
+        </g>
+
+        {/* Example: breathing/floating element in Phase 3 */}
+        <g transform={`translate(540, ${1200 + breathe})`} style={{ transformOrigin: '540px 1200px' }}>
+          <circle cx={0} cy={0} r={60} fill={COLORS.amber} fillOpacity={0.15 * shimmer} />
+          <circle cx={0} cy={0} r={60} fill="none" stroke={COLORS.amber} strokeWidth={2}
+            transform={`scale(${pulse})`} style={{ transformOrigin: '0px 0px' }} />
+        </g>
+
+        {/* ── CAPTION ZONE — FIXED POSITION, NO BACKGROUND ───────────────── */}
         {caption && (
           <Caption
             text={caption.text}
@@ -563,6 +687,10 @@ export const Scene{N}_{Name}: React.FC = () => {
   );
 };
 ```
+
+> **Line-count gate:** After writing each scene file, count lines. If < 300, expand the visual
+> content in Zone C — add more diagram elements, additional animation phases, or richer
+> micro-animations until the file reaches 300+ lines. Never submit a thin scene.
 
 ---
 
@@ -1096,6 +1224,12 @@ Before considering a day complete, verify every file:
 - [ ] All font sizes ≥ 28px
 - [ ] All `interpolate()` calls have `extrapolateRight: 'clamp'`
 - [ ] No overlapping bounding boxes
+- [ ] **Scene file is ≥ 300 lines** (count lines — if < 300, expand Zone C)
+- [ ] **≥ 3 animation phases** (reveal / content build / steady-state micro)
+- [ ] **`spring()` used for every major element entrance** (not plain interpolate)
+- [ ] **No "basic" fade-only animation** — every element has translateY + opacity + optional scale
+- [ ] Diagrams use SVG path-draw (`strokeDashoffset`) not instant appear
+- [ ] Stagger delay between sibling elements is 10–14 frames (not all at once)
 
 **Scene.tsx**
 - [ ] Audio `<Sequence from={150}>` (not from={0})
@@ -1108,7 +1242,330 @@ Before considering a day complete, verify every file:
 
 ---
 
-## PART 17 — MULTI-DAY BATCH GENERATION PROTOCOL
+## PART 17 — AUTONOMOUS EXECUTION PROTOCOL (read this before PART 18)
+
+### PRIME DIRECTIVE — ZERO QUESTIONS, ZERO STOPS
+
+```
+Once a generation command is received, the agent executes completely and autonomously.
+
+NEVER:
+  ❌ Ask "Should I continue?"
+  ❌ Ask "Do you want me to proceed with Day N?"
+  ❌ Ask "Which audio file should I use?"
+  ❌ Ask "How many scenes should this have?"
+  ❌ Ask "Is this what you meant?"
+  ❌ Stop and report an ambiguity — resolve it using the decision table below
+  ❌ Wait for confirmation between days, between chunks, between files
+  ❌ Ask about anything that has a rule in this file — the rule is the answer
+
+ALWAYS:
+  ✅ Make a decision using the rules in this file
+  ✅ If a rule covers the situation → follow it, don't ask about it
+  ✅ If a file is missing → use the fallback rule in the AMBIGUITY TABLE
+  ✅ If something goes wrong → fix it and continue
+  ✅ Keep generating until the entire command is complete
+  ✅ Print progress markers so the user can read the log
+  ✅ Re-read this instructions file between every chunk (defined in PART 18)
+```
+
+---
+
+### AMBIGUITY RESOLUTION TABLE (use this instead of asking questions)
+
+When something is unclear, do NOT ask. Use the rule in the right column.
+
+| Situation | Resolution — no question needed |
+|---|---|
+| Audio file not in `src/Instructions/audio/` | Check `public/audio/`. If neither exists, create a placeholder `timing.ts` comment: `// AUDIO MISSING: place ai{N}.wav in public/audio/` and continue |
+| CSV file not found | Create `timing.ts` with `// CSV MISSING: place ai{N}_word_by_word_transcript.csv in src/Instructions/` and generate 10 placeholder scenes from the architecture file topic |
+| Unsure how many scenes | Use the minimum from PART 10 table based on audio duration. When no CSV: 14 scenes default |
+| Topic text unclear | Use the EXACT text from the architecture file. Do not paraphrase or shorten |
+| Next-day topic not in architecture | Write `// Day N+1 topic pending` in Outro and continue |
+| Scene content ambiguous | Use the EXACT CSV phrase words. Do not elaborate or add context |
+| Frame calculation uncertainty | Re-run: `150 + ceil(audioDur * 30) + 30 + 120 + 362`. Never guess |
+| Which accent color for HiddenWorld | Read the emoji prefix in architecture.md: 🎮→purple, 🚀→sky_blue, 🏎️→orange, 🔭→green, ✈️→sky_blue, 🏍️→amber, 🌊→sky_blue |
+| Font size needed for long text | Use `fitText()` from `@remotion/layout-utils` or cap at 52px and break into 2 lines |
+| Scene duration seems short | Minimum is 60 frames. If phrase < 2s in CSV, merge with adjacent phrase |
+| Two phrases share a scene boundary | Always SPLIT at sentence-ending punctuation. Merge only at soft breaks |
+| Overlap detected between scenes | Adjust the LATER scene's `from` to be `prev.from + prev.duration`. Do not ask |
+| File already exists | Overwrite it. Never ask for confirmation to overwrite |
+| Root.tsx composition ID conflict | Append `_v2` to the ID and continue |
+
+---
+
+### SELF-CORRECTION RULES (fix and continue, never ask)
+
+```
+If a generated file has a lint error:
+  → Fix the import, fix the syntax, re-write the problematic block, continue
+
+If a scene's bounding box calculation shows overlap:
+  → Reduce font size by 8px OR shift the lower element down by the overlap amount, continue
+
+If the scroll timeline ALL_DAYS array seems too long:
+  → Keep it. Full list is required. 120 entries for AI/HiddenWorld, 105 for Java.
+
+If a caption is too long (>52 chars):
+  → Split into 2 lines at y=1762 and y=1810. Do not shorten the text.
+
+If an SVG element would go below y=1740:
+  → Reduce font size or compress spacing. Hard limit: content stays above y=1740.
+
+If unsure which pattern (A/B/C/D/E) to use for a scene:
+  → Read the spoken phrase. Number/stat → Pattern D. Comparison → Pattern B.
+     List/bullets → Pattern A. Process/flow → Pattern C. Code → Pattern E.
+     Default if still unclear → Pattern A.
+```
+
+---
+
+## PART 18 — CHUNK-BASED EXECUTION (prevents context overflow & drift)
+
+### Why chunks exist
+
+Generating one full day produces ~7-25 files and thousands of lines of code. Long generation
+sessions cause the model to gradually drift from the rules set at the start. Chunks are
+deliberately small units of work, each preceded by a mandatory instruction re-read, so that
+every file is generated with fresh rule awareness — not memory of rules set 3000 tokens ago.
+
+---
+
+### CHUNK SIZE DEFINITION
+
+A chunk is the largest unit of work that can be completed without rule drift. Defined as:
+
+```
+CHUNK = one of the following units:
+  A) Planning output for all days (no code, just analysis + plan print)
+  B) helpers/timing.ts  for one day
+  C) helpers/components.tsx  for one day
+  D) Scene01_ScrollTimeline.tsx  for one day
+  E) Content scenes 02 through 06  for one day  (max 5 scenes per chunk)
+  F) Content scenes 07 through 11  for one day  (max 5 scenes per chunk)
+  G) Content scenes 12 through 16  for one day  (max 5 scenes per chunk)
+  H) Content scenes 17+ through end  for one day  (max 5 scenes per chunk)
+  I) KeyTakeaway + Outro  for one day
+  J) Scene.tsx (orchestrator)  for one day
+  K) Root.tsx update  (all days, done once at the very end)
+```
+
+**Adjust chunk boundaries based on scene count:**
+- 6–10 content scenes: use 2 content chunks (E + F)
+- 11–16 content scenes: use 3 content chunks (E + F + G)
+- 17–22 content scenes: use 4 content chunks (E + F + G + H)
+- Never put more than 5 content scenes in one chunk
+
+---
+
+### THE RE-READ TRIGGER (mandatory before EVERY chunk)
+
+Before starting any chunk — whether it's chunk B of day 1 or chunk E of day 5 — execute:
+
+```
+╔════════════════════════════════════════════════════════════════╗
+║  ⟳  INSTRUCTION RE-READ TRIGGER                               ║
+╠════════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  1. Read: .github/copilot-instructions.md  (FULL FILE)        ║
+║     Focus on the parts relevant to the next chunk:           ║
+║     • PART 1  — fundamentals (canvas, fps, background)       ║
+║     • PART 4  — frame math formula                           ║
+║     • PART 5  — timing.ts template          (before chunk B) ║
+║     • PART 6  — components.tsx template     (before chunk C) ║
+║     • PART 9  — ScrollTimeline template     (before chunk D) ║
+║     • PART 8  — scene boilerplate           (before chunk E/F/G/H) ║
+║     • PART 12 — layout patterns             (before chunk E/F/G/H) ║
+║     • PART 11 — style rules                 (before every chunk)   ║
+║     • PART 16 — per-file checklist          (before chunk J) ║
+║     • PART 20 — premium animation rules     (before chunk E/F/G/H) ║
+║                                                               ║
+║  2. Read: src/Instructions/remotion-best-practices.md        ║
+║     (skim — 30 seconds — focus on the section for this chunk)║
+║                                                               ║
+║  3. Read: the architecture file entry for THIS DAY           ║
+║     Confirm: topic, module, Day N+1 topic                    ║
+║                                                               ║
+║  4. If this is a content scene chunk: re-read the CSV        ║
+║     for the specific phrase group being generated            ║
+║                                                               ║
+║  5. Confirm the 6 critical rules from memory:                ║
+║     • Background = #F5F0E8 on EVERY scene                    ║
+║     • Audio in <Sequence from={150}> NOT from={0}            ║
+║     • Caption at y=1780, NO background rect                  ║
+║     • No gradient, no emoji, no CSS animation                ║
+║     • premountFor={30} on every <Sequence>                   ║
+║     • Every scene ≥ 300 lines, spring() on every entrance    ║
+║                                                               ║
+╚════════════════════════════════════════════════════════════════╝
+```
+
+---
+
+### FULL EXECUTION MAP (single day)
+
+Every day follows this exact chunk sequence. Print the chunk header before starting each chunk.
+
+```
+═══════════════════════════════════════════════════════════════════════
+DAY [N] — "[Topic]" — CHUNK MAP
+═══════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ CHUNK A — PLANNING                                                  │
+│ No code. Read arch file, read CSV, calculate frames, count scenes.  │
+│ Print: day topic, audio duration, total frames, scene list.         │
+└─────────────────────────────────────────────────────────────────────┘
+          ↓ ⟳ RE-READ FULL INSTRUCTIONS
+┌─────────────────────────────────────────────────────────────────────┐
+│ CHUNK B — helpers/timing.ts                                         │
+│ Write: COLORS, SCENE_TIMING (all scenes), CAPTIONS, helpers.        │
+│ Verify: TOTAL_FRAMES = OUTRO_FROM + 362. No placeholder values.     │
+└─────────────────────────────────────────────────────────────────────┘
+          ↓ ⟳ RE-READ FULL INSTRUCTIONS
+┌─────────────────────────────────────────────────────────────────────┐
+│ CHUNK C — helpers/components.tsx                                    │
+│ Write: PaperBackground, GlobalDefs, Caption, CornerAccents,         │
+│        Divider, SectionLabel.                                       │
+│ Verify: Caption y=1780, no background rect, dot grain in paper.     │
+└─────────────────────────────────────────────────────────────────────┘
+          ↓ ⟳ RE-READ FULL INSTRUCTIONS
+┌─────────────────────────────────────────────────────────────────────┐
+│ CHUNK D — frames/Scene01_ScrollTimeline.tsx                         │
+│ Write: ALL_DAYS array (FULL list from arch file), scroll anim,      │
+│        clip path, fade-out at frames 130–149.                       │
+│ Verify: ROW_H=220, VISIBLE=6, current day highlighted correctly.    │
+└─────────────────────────────────────────────────────────────────────┘
+          ↓ ⟳ RE-READ FULL INSTRUCTIONS + RE-READ CSV phrases 1-5
+┌─────────────────────────────────────────────────────────────────────┐
+│ CHUNK E — frames/Scene02 through Scene06                            │
+│ Write: first 5 content scenes (or fewer if day has ≤5 scenes).      │
+│ Each: PaperBackground first, correct zone layout, caption, no grad. │
+│ Verify each before next: bounding boxes, colors, font sizes.        │
+└─────────────────────────────────────────────────────────────────────┘
+          ↓ ⟳ RE-READ FULL INSTRUCTIONS + RE-READ CSV phrases 6-10
+┌─────────────────────────────────────────────────────────────────────┐
+│ CHUNK F — frames/Scene07 through Scene11  (if needed)               │
+│ Same rules as chunk E. Re-read CSV for this phrase group.           │
+└─────────────────────────────────────────────────────────────────────┘
+          ↓ ⟳ RE-READ FULL INSTRUCTIONS + RE-READ CSV phrases 11+
+┌─────────────────────────────────────────────────────────────────────┐
+│ CHUNK G — frames/Scene12 through Scene16  (if needed)               │
+│ Same rules as chunk E.                                              │
+└─────────────────────────────────────────────────────────────────────┘
+          ↓ ⟳ RE-READ FULL INSTRUCTIONS + RE-READ CSV phrases 17+
+┌─────────────────────────────────────────────────────────────────────┐
+│ CHUNK H — frames/Scene17+  (if needed, for 18–22 scene days)        │
+│ Same rules as chunk E.                                              │
+└─────────────────────────────────────────────────────────────────────┘
+          ↓ ⟳ RE-READ FULL INSTRUCTIONS
+┌─────────────────────────────────────────────────────────────────────┐
+│ CHUNK I — KeyTakeaway + Outro                                       │
+│ KeyTakeaway: main concept, typographic, sky_blue headline.          │
+│ Outro: current day recap + TOMORROW preview (re-check arch N+1).   │
+│ Verify: Outro has correct Day N+1 topic (re-read arch file now).    │
+└─────────────────────────────────────────────────────────────────────┘
+          ↓ ⟳ RE-READ FULL INSTRUCTIONS
+┌─────────────────────────────────────────────────────────────────────┐
+│ CHUNK J — Scene.tsx (orchestrator)                                  │
+│ Write: AbsoluteFill + Audio in Sequence from={150} + all scenes     │
+│        with premountFor={30} + correct TOTAL_FRAMES in comment.     │
+│ Verify: Audio from={150} ✓  All premountFor={30} ✓  All imports ✓  │
+└─────────────────────────────────────────────────────────────────────┘
+
+Print: ✅ DAY [N] COMPLETE marker (defined in PART 19 below)
+Then: ⟳ RE-READ FULL INSTRUCTIONS before next day
+```
+
+---
+
+### FULL EXECUTION MAP (multi-day batch)
+
+For N days, the chunks execute in this order. Root.tsx is updated ONCE at the very end.
+
+```
+[START OF BATCH]
+
+⟳ RE-READ .github/copilot-instructions.md (full)
+⟳ RE-READ src/Instructions/remotion-best-practices.md
+⟳ RE-READ CLAUDE.md
+
+CHUNK A-all: Discovery + Plan for ALL days simultaneously
+  → Read arch file for every day in batch
+  → Check all audio files
+  → Read all CSVs, calculate all frame counts
+  → Count scenes per day from phrase groups
+  → Print full plan (PART 19 template)
+
+CHUNK SETUP: Stage all audio, create all folders
+
+─────────────── DAY N1 ───────────────
+⟳ RE-READ (full)
+CHUNK B → timing.ts
+⟳ RE-READ (full)
+CHUNK C → components.tsx
+⟳ RE-READ (full)
+CHUNK D → Scene01_ScrollTimeline
+⟳ RE-READ (full)
+CHUNK E → Scenes 02-06
+⟳ RE-READ (full)
+CHUNK F → Scenes 07-11  (if needed)
+⟳ RE-READ (full)
+CHUNK G → Scenes 12-16  (if needed)
+⟳ RE-READ (full)
+CHUNK H → Scenes 17+    (if needed)
+⟳ RE-READ (full)
+CHUNK I → KeyTakeaway + Outro
+⟳ RE-READ (full)
+CHUNK J → Scene.tsx
+
+✅ DAY N1 COMPLETE
+⟳ RE-READ (full) — mandatory before next day
+
+─────────────── DAY N2 ───────────────
+(same chunk sequence as Day N1)
+✅ DAY N2 COMPLETE
+⟳ RE-READ (full)
+
+─────────────── DAY N3+ ─────────────
+(repeat)
+
+─────────────── FINAL ───────────────
+CHUNK K → Root.tsx (all days at once)
+Print final batch report
+[END OF BATCH]
+```
+
+---
+
+### CHUNK PROGRESS MARKERS (print before each chunk, no exceptions)
+
+```
+── CHUNK [LETTER] ── DAY [N] ── [description] ──────────────────────────
+⟳ Reading .github/copilot-instructions.md ... done
+⟳ Reading remotion-best-practices.md ... done
+⟳ Confirmed: #F5F0E8 background, audio frame 150, caption y=1780, no gradient
+Writing [filename] ...
+```
+
+This marker serves as the self-confirmation checkpoint. If the agent cannot honestly
+fill in "confirmed" — it re-reads until it can.
+
+---
+
+### CHUNK COMPLETION MARKERS
+
+```
+── CHUNK [LETTER] DONE ── DAY [N] ──────────────────────────────────────
+File: [filename]
+Lines: [N]
+Verified: background ✓ | no gradient ✓ | caption ✓ | font sizes ✓
+─────────────────────────────────────────────────────────────────────────
+```
+
+---
+
+## PART 19 — MULTI-DAY BATCH GENERATION PROTOCOL
 
 > **This part is mandatory when generating more than one day in a single session.**
 > The agent MUST follow every step in order. Do not skip any phase.
@@ -1466,7 +1923,8 @@ Never mark a day "complete" if any file is missing or empty.
 >
 > *"Re-read .github/copilot-instructions.md now. Pay attention to: PART 1 (fundamentals),
 > PART 4 (frame math), PART 5 (timing.ts template), PART 8 (scene boilerplate),
-> PART 11 (style rules), PART 16 (checklist). Then continue with Day [N]."*
+> PART 11 (style rules), PART 16 (checklist), PART 20 (premium animation requirements).
+> Then continue with Day [N]."*
 
 ---
 
@@ -1535,3 +1993,347 @@ Writing src/Day29/helpers/timing.ts ... done
 [ROOT] Updating src/Root.tsx with 3 new compositions...
 [REPORT] Printing final batch summary...
 ```
+
+---
+
+## PART 20 — PREMIUM ANIMATION REQUIREMENTS
+
+> **This PART is mandatory reading before writing ANY scene file.**
+> Basic animation is REJECTED. Every scene must be premium quality with ≥ 300 lines of code.
+
+---
+
+### 20.1 — THE 300-LINE HARD RULE
+
+```
+Every scene file (except Scene01_ScrollTimeline.tsx) MUST be ≥ 300 lines of code.
+
+After writing each file, count its lines.
+If the count is < 300:
+  → Expand Zone C with more diagram elements
+  → Add Phase 3 micro-animations (pulse, float, shimmer)
+  → Add more staggered sub-items to existing cards
+  → Add SVG path-draw connectors between elements
+  → Add a counter animation or number tick-up
+  → Never pad with blank lines or comments — pad with real visual content
+
+This is a non-negotiable minimum. A 180-line scene is a FAILED scene.
+```
+
+---
+
+### 20.2 — WHAT "BASIC" MEANS (and why it is FORBIDDEN)
+
+The following are **basic** animations. They are **FORBIDDEN** as the sole animation on any element:
+
+| ❌ Basic (forbidden alone) | ✅ Premium replacement |
+|---|---|
+| `opacity: interpolate(frame, [0,20], [0,1])` | Spring entrance with translateY + opacity together |
+| `scale: interpolate(frame, [0,20], [0.8,1])` | `spring()` with SPRING_SNAP config |
+| Static colored rect that appears all at once | Rect with animated strokeDashoffset border draw |
+| Arrow that pops in with a single opacity | Arrow drawn via path strokeDashoffset over 20 frames |
+| Text that fades in without movement | Text slides up 28px while fading in via spring |
+| All elements animate at frame 0 simultaneously | Stagger: each element delayed 10–14 frames from previous |
+| Flat colored icon | Icon with animated stroke + inner fill separately timed |
+| Number displayed statically | Counter that ticks from 0 → final value over 40 frames |
+
+---
+
+### 20.3 — AVAILABLE LIBRARIES AND WHEN TO USE EACH
+
+#### A. `remotion` — spring + interpolate (USE IN EVERY SCENE)
+```tsx
+import { spring, interpolate, Easing, useCurrentFrame } from 'remotion';
+
+// spring() for every entrance — NOT plain interpolate
+const progress = spring({ frame, fps: 30, config: { damping: 18, stiffness: 180, mass: 0.8 } });
+const translateY = interpolate(progress, [0, 1], [32, 0]);  // 32px drop → 0
+const opacity    = interpolate(progress, [0, 0.3], [0, 1], { extrapolateRight: 'clamp' });
+```
+
+Spring configs to use:
+```typescript
+const SPRING_CONFIG = { damping: 18, stiffness: 180, mass: 0.8 }; // standard entrance
+const SPRING_SOFT   = { damping: 22, stiffness: 120, mass: 1.0 }; // slow reveal
+const SPRING_SNAP   = { damping: 12, stiffness: 260, mass: 0.6 }; // snappy pop
+const SPRING_HEAVY  = { damping: 28, stiffness: 100, mass: 1.4 }; // dramatic weight
+```
+
+#### B. `@remotion/transitions` (USE for scene-level transition effects — optional)
+```tsx
+import { TransitionSeries, springTiming } from '@remotion/transitions';
+import { slide } from '@remotion/transitions/slide';
+import { wipe } from '@remotion/transitions/wipe';
+import { fade } from '@remotion/transitions/fade';
+
+// Use in Scene.tsx to wrap content scenes with smooth slide/wipe between them
+<TransitionSeries>
+  <TransitionSeries.Sequence durationInFrames={duration1}>
+    <SceneA />
+  </TransitionSeries.Sequence>
+  <TransitionSeries.Transition
+    timing={springTiming({ config: { damping: 20, stiffness: 140 } })}
+    presentation={slide({ direction: 'from-bottom' })}
+  />
+  <TransitionSeries.Sequence durationInFrames={duration2}>
+    <SceneB />
+  </TransitionSeries.Sequence>
+</TransitionSeries>
+```
+
+#### C. `@react-three/fiber` + `@remotion/three` (USE for 3D hero scenes)
+```tsx
+import { ThreeCanvas } from '@remotion/three';
+import { Canvas } from '@react-three/fiber';
+
+// Use for: rotating 3D diagrams, particle fields, 3D text, spinning geometry
+// Mount inside AbsoluteFill alongside the SVG layer
+// Keep geometries simple — boxes, spheres, toruses — not complex GLTF meshes
+// Animate using useCurrentFrame() → pass frame as uniform to shaders or as rotation
+
+// Example: 3D spinning torus knot hero
+<ThreeCanvas width={1080} height={1920} style={{ position: 'absolute', inset: 0 }}>
+  <ambientLight intensity={0.6} />
+  <directionalLight position={[5, 5, 5]} intensity={1.2} />
+  <mesh rotation={[frame * 0.01, frame * 0.02, 0]}>
+    <torusKnotGeometry args={[2, 0.5, 128, 16]} />
+    <meshStandardMaterial color="#2563EB" wireframe={false} />
+  </mesh>
+</ThreeCanvas>
+```
+
+**When to use 3D:**
+- Opening hero scene where the concept is mechanical/spatial (rockets, chips, physics)
+- Scenes where a 3D diagram communicates depth (layers, stacks, networks)
+- Do NOT use 3D for text-heavy scenes — SVG is better for readability
+
+#### D. SVG inline animations (USE IN EVERY SCENE for diagrams)
+```tsx
+// Path-draw (strokeDashoffset) — for all arrows, connectors, borders
+const pathLength = 340; // measure real path length with SVG tools
+const dashOffset = interpolate(frame, [30, 55], [pathLength, 0], {
+  extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
+  easing: Easing.bezier(0.4, 0, 0.2, 1),
+});
+
+<path
+  d="M 100,500 C 100,700 540,700 540,900"
+  fill="none" stroke={COLORS.sky_blue} strokeWidth={3}
+  strokeDasharray={pathLength} strokeDashoffset={dashOffset}
+  strokeLinecap="round"
+/>
+```
+
+#### E. Canvas 2D (USE for particle effects and dot fields)
+```tsx
+import { useRef, useEffect } from 'react';
+
+// Mount a <canvas> inside AbsoluteFill for particle fields, dot grids, flowing lines
+// Animate by writing to canvas each render based on useCurrentFrame()
+// Example: animated dot field that ripples outward from center
+```
+
+#### F. `lucide-react` / `react-icons` (USE for icon glyphs, not SVG from scratch)
+```tsx
+import { Cpu, Zap, Database, Network } from 'lucide-react';
+// Render inside <foreignObject> or use their SVG path data directly
+// Animate opacity + scale with spring() like any other element
+```
+
+---
+
+### 20.4 — MANDATORY ANIMATION PHASES (every scene needs ≥ 3)
+
+Every scene file must contain comments marking at least these 3 phases:
+
+```tsx
+// ── Phase 1: Scene reveal (frames 0–25) ──────────────────────────────────────
+// Paper lifts (scaleY spring 0.98→1), section label slides in, headline springs up
+// ALL elements in this phase: spring() entrance, NOT interpolate fade
+
+// ── Phase 2: Content build (frames 20–90, stagger 12 frames each) ────────────
+// Cards, diagrams, code blocks, path-draw connectors animate in
+// Each element individually delayed — never all at frame 0
+// Path-draw used for ALL lines, arrows, and diagram connectors
+
+// ── Phase 3: Steady-state micro-animations (frames 80→end) ───────────────────
+// Subtle float (Math.sin * 4px), scale pulse (1 ± 0.015), shimmer opacity
+// Counters that tick during this phase
+// Highlight/ring pulses on key elements
+// Connector lines that animate opacity (0.6→1→0.6 breathing)
+```
+
+---
+
+### 20.5 — PREMIUM TECHNIQUES REFERENCE
+
+#### Staggered cascade
+```tsx
+// Every sibling element gets its own spring with increasing delay
+const STAGGER = 12; // frames between each element
+const items = ['Alpha', 'Beta', 'Gamma', 'Delta'];
+const springs = items.map((_, i) => {
+  const f = Math.max(0, frame - i * STAGGER);
+  return spring({ frame: f, fps: 30, config: SPRING_CONFIG });
+});
+```
+
+#### Headline typewriter effect
+```tsx
+const text = "AI Agent Loops";
+const charsVisible = Math.floor(
+  interpolate(frame, [10, 10 + text.length * 1.5], [0, text.length], {
+    extrapolateRight: 'clamp',
+  })
+);
+const displayText = text.slice(0, charsVisible);
+// Render with a blinking cursor rect
+```
+
+#### Counter / odometer tick-up
+```tsx
+function useCounter(frame: number, start: number, end: number, fromFrame: number, duration: number) {
+  const raw = interpolate(frame, [fromFrame, fromFrame + duration], [start, end], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+    easing: Easing.out(Easing.cubic),
+  });
+  return Math.round(raw);
+}
+const displayValue = useCounter(frame, 0, 97, 40, 45); // 0→97 over 45 frames starting at f=40
+```
+
+#### Ink-reveal clip path
+```tsx
+// Reveal diagram from left to right as if being drawn by a pen
+const revealWidth = interpolate(frame, [30, 70], [0, 960], {
+  extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
+  easing: Easing.bezier(0.25, 0, 0.75, 1),
+});
+<defs>
+  <clipPath id="inkReveal">
+    <rect x={60} y={0} width={revealWidth} height={1920} />
+  </clipPath>
+</defs>
+<g clipPath="url(#inkReveal)">
+  {/* entire diagram — reveals from left */}
+</g>
+```
+
+#### Parallax layers (depth illusion)
+```tsx
+// Foreground moves faster than background based on a slow oscillation or scroll progress
+const scrollPct = interpolate(frame, [0, sceneDuration], [0, 1], { extrapolateRight: 'clamp' });
+const bgY    = interpolate(scrollPct, [0, 1], [0, -40]);   // slow
+const midY   = interpolate(scrollPct, [0, 1], [0, -80]);   // medium
+const fgY    = interpolate(scrollPct, [0, 1], [0, -140]);  // fast
+```
+
+#### Animated SVG border (border-draw on card appear)
+```tsx
+// Card border draws around the rect perimeter as the card enters
+const PERIMETER = 2 * (960 + 160); // 2 * (width + height)
+const borderDash = interpolate(frame, [cardDelay, cardDelay + 30], [PERIMETER, 0], {
+  extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
+});
+<rect x={60} y={460} width={960} height={160} rx={16}
+  fill="none" stroke={COLORS.sky_blue} strokeWidth={2.5}
+  strokeDasharray={PERIMETER} strokeDashoffset={borderDash} />
+```
+
+#### Multi-line headline with per-word spring
+```tsx
+const words = ["Artificial", "Intelligence", "Loops"];
+words.map((word, i) => {
+  const f = Math.max(0, frame - i * 8);
+  const sp = spring({ frame: f, fps: 30, config: SPRING_SNAP });
+  const ty = interpolate(sp, [0, 1], [24, 0]);
+  const op = interpolate(sp, [0, 0.4], [0, 1], { extrapolateRight: 'clamp' });
+  return (
+    <text key={i}
+      x={60} y={260 + i * 90}
+      opacity={op}
+      transform={`translate(0, ${ty})`}
+      fontFamily="'Inter', sans-serif" fontSize={80} fontWeight={900}
+      fill={COLORS.deep_black}
+    >
+      {word}
+    </text>
+  );
+});
+```
+
+---
+
+### 20.6 — ZONE C DENSITY RULES
+
+Zone C (y=460–1700) must use the full 1240px height. Do NOT leave large empty areas.
+
+| Content type | Minimum elements in Zone C |
+|---|---|
+| Concept explanation scene | 3 cards OR 2 cards + 1 large diagram |
+| Comparison scene | 2-column layout, minimum 4 rows |
+| Flow/process scene | 4–6 step nodes with animated connectors between each |
+| Data/stats scene | 2 large counters + 2 supporting detail cards |
+| Definition scene | 1 large hero term + 3 supporting facts + 1 visual diagram |
+
+All elements must be connected where logical — use SVG path-draw connectors, not just separate floating boxes.
+
+---
+
+### 20.7 — ANTI-PATTERNS (will cause REJECTION during PART 16 checklist)
+
+```
+❌ Scene with only 1 large text block and no diagram
+❌ All elements fade in at frame 0 simultaneously (no stagger)
+❌ Any arrow or line that appears instantly without strokeDashoffset draw
+❌ Counter displayed as static text when a tick-up animation makes sense
+❌ Phase 3 empty — scene is fully static after frame 80
+❌ Zone C less than 60% filled (large empty whitespace in the middle)
+❌ Spring configs hardcoded inline with different numbers each time
+   → use the 4 named SPRING_CONFIG constants from 20.3.A
+❌ 3D scene without ambient + directional light
+❌ Canvas element with no per-frame update logic
+❌ lucide-react icon rendered at < 48px
+❌ Using framer-motion — it is FORBIDDEN (CSS-based, breaks Remotion render)
+❌ Using CSS transition: or animation: anywhere
+```
+
+---
+
+### 20.8 — SCENE FILE STRUCTURE TEMPLATE (with premium requirements)
+
+Every scene file must follow this section ordering:
+
+```
+1. JSDoc block (6–10 lines) — includes animation phases description
+2. Imports — remotion + helpers + any premium library
+3. SPRING_CONFIG constants (copy from 20.3.A — all 4)
+4. Helper functions (useSpringEntrance, usePathDraw, useCounter, etc.)
+5. Export component function
+   5a. useCurrentFrame() + fps constant
+   5b. Phase 1 spring variables (all labeled with phase comment)
+   5c. Phase 2 spring variables (staggered, labeled)
+   5d. Phase 3 micro-animation variables (sin/cos/pulse, labeled)
+   5e. Counter variables (if used)
+   5f. Caption lookup
+   5g. return JSX
+      - AbsoluteFill with bg_paper background
+      - <svg> root
+      - PaperBackground (FIRST)
+      - GlobalDefs (SECOND, always)
+      - Zone A (section label with spring entrance)
+      - Zone B (headline with per-word spring)
+      - Zone C (diagrams, cards, connectors — fully filled)
+      - Caption (LAST, fixed y=1780)
+```
+
+If you follow this structure fully, the file will naturally reach 300+ lines.
+
+---
+
+### 20.9 — CONTEXT REFRESH FOR PREMIUM ANIMATIONS
+
+> If you are mid-batch and feel like making a "simpler" scene to save time —
+> **do not**. Re-read PART 20.2 (what "basic" means) and PART 20.5 (techniques).
+> Every scene, every day, must be premium. The quality bar does not lower for later scenes in a batch.

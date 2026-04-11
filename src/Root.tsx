@@ -6,6 +6,9 @@ import { Day25Scene } from "./Day25/Scene";
 import { Day26Scene } from "./Day26/Scene";
 import { Day27Scene } from "./Day27/Scene";
 import { MoonScene } from "./Moon/Scene";
+import { JavaDay32Scene } from "./JavaDay32/Scene";
+import { JavaDay33Scene } from "./JavaDay33/Scene";
+import { JavaDay34Scene } from "./JavaDay34/Scene";
 import "./style.css";
 
 export const RemotionRoot: React.FC = () => {
@@ -55,6 +58,32 @@ export const RemotionRoot: React.FC = () => {
         id="HiddenWorldDay27"
         component={Day27Scene}
         durationInFrames={2842}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+
+      {/* ── Java OOP Series ─────────────────────────────────── */}
+      <Composition
+        id="JavaDay32"
+        component={JavaDay32Scene}
+        durationInFrames={3035}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="JavaDay33"
+        component={JavaDay33Scene}
+        durationInFrames={2817}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="JavaDay34"
+        component={JavaDay34Scene}
+        durationInFrames={3146}
         fps={30}
         width={1080}
         height={1920}
