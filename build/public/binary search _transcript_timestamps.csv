@@ -1,0 +1,16 @@
+Index,Start Time (s),End Time (s),Duration (s),Start Timestamp,End Timestamp,Character Count,Text
+1,0.000,4.060,4.060,00:00.000,00:04.060,69,Let's understand binary search in 60 seconds for your next interview.
+2,4.580,11.520,6.940,00:04.580,00:11.520,126,Binary search is an efficient way to find a target value within a sorted list by repeatedly splitting the search area in half.
+3,12.020,16.160,4.140,00:12.020,00:16.160,78,This method relies entirely on the fact that the numbers are already in order.
+4,16.420,21.200,4.780,00:16.420,00:21.200,91,"We start with two boundaries, a left marker at the beginning and a right marker at the end."
+5,21.640,24.860,3.220,00:21.640,00:24.860,68,"To find our target, we look at the exact middle of these two points."
+6,25.560,28.380,2.820,00:25.560,00:28.380,59,We compare the value at this middle position to our target.
+7,28.380,32.740,4.360,00:28.380,00:32.740,84,"If the middle value is exactly what we are looking for, the search ends immediately."
+8,33.360,37.680,4.320,00:33.360,00:37.680,95,"If the middle value is greater than our target, we know the target cannot be on the right side."
+9,38.000,44.020,6.020,00:38.000,00:44.020,116,"Because every number there is even larger, we move our right marker to the middle, discarding the entire right half."
+10,44.620,48.720,4.100,00:44.620,00:48.720,89,"If the middle value is smaller than our target, we know the target cannot be on the left."
+11,49.200,51.120,1.920,00:49.200,00:51.120,41,Every number to the left is even smaller.
+12,51.820,56.320,4.500,00:51.820,00:56.320,89,"We move our left marker to the middle, discarding the entire left half by repeating this,"
+13,56.320,62.480,6.160,00:56.320,01:02.480,120,"calculating the middle and moving a boundary, we narrow the search space until the target is found or the marker's meet."
+14,63.260,67.240,3.980,01:03.260,01:07.240,69,"In an interview, remember that this takes logarithmic time, or log n,"
+15,67.600,71.500,3.900,01:07.600,01:11.500,77,"because we divide the problem by two with every single check, problem solved."

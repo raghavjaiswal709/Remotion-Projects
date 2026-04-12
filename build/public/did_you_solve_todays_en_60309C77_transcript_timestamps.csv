@@ -1,0 +1,42 @@
+Index,Start Time (s),End Time (s),Duration (s),Start Timestamp,End Timestamp,Character Count,Text
+1,0.000,1.940,1.940,00:00.000,00:01.940,38,"Did you solve today's lead code, BOTD?"
+2,2.240,3.720,1.480,00:02.240,00:03.720,32,"If not, let's solve it together."
+3,4.160,6.100,1.940,00:04.160,00:06.100,39,We are checking if an array is trionic.
+4,6.540,9.420,2.880,00:06.540,00:09.420,64,"To understand this, imagine the array as a sequence of movements"
+5,9.420,11.180,1.760,00:09.420,00:11.180,36,that must follow three strict rules.
+6,11.600,13.960,2.360,00:11.600,00:13.960,40,"It must go up, then down, then up again."
+7,14.460,16.900,2.440,00:14.460,00:16.900,51,"We solve this by identifying two transition points,"
+8,17.500,18.760,1.260,00:17.500,00:18.760,24,the peak and the valley.
+9,19.780,21.720,1.940,00:19.780,00:21.720,36,The first rule is the initial climb.
+10,22.320,23.860,1.540,00:22.320,00:23.860,38,We start at the beginning of the array
+11,23.860,26.140,2.280,00:23.860,00:26.140,43,and move forward as long as the next number
+12,26.140,27.760,1.620,00:26.140,00:27.760,40,is strictly larger than the current one.
+13,28.400,30.160,1.760,00:28.400,00:30.160,37,This journey stops at the first peak.
+14,30.320,32.380,2.060,00:30.320,00:32.380,46,"For the array to be valid, this peak cannot be"
+15,32.380,33.460,1.080,00:32.380,00:33.460,27,at the very first position.
+16,33.740,35.940,2.200,00:33.740,00:35.940,53,The array must have actually increased at least once.
+17,36.320,37.760,1.440,00:36.320,00:37.760,35,The second rule is the final climb.
+18,38.200,40.240,2.040,00:38.200,00:40.240,47,"Instead of moving forward, we look at the array"
+19,40.240,41.640,1.400,00:40.240,00:41.640,31,from the end and move backward.
+20,41.840,43.720,1.880,00:41.840,00:43.720,45,We continue as long as the number to the left
+21,43.720,44.720,1.000,00:43.720,00:44.720,20,is strictly smaller.
+22,45.140,46.920,1.780,00:45.140,00:46.920,50,This point where the increase from the right stops
+23,46.920,47.700,0.780,00:46.920,00:47.700,14,is our valley.
+24,48.120,50.100,1.980,00:48.120,00:50.100,40,"Just like the peak, the valley cannot be"
+25,50.100,51.100,1.000,00:50.100,00:51.100,26,at the very last position.
+26,51.480,53.900,2.420,00:51.480,00:53.900,60,There must be a clear increase at the tail end of the array.
+27,54.220,56.240,2.020,00:54.220,00:56.240,46,The third and final rule is the middle bridge.
+28,56.800,59.780,2.980,00:56.800,00:59.780,67,"For the array to be trionic, the peak must occur before the valley."
+29,60.100,62.560,2.460,01:00.100,01:02.560,54,"More importantly, every single number between the peak"
+30,62.560,64.340,1.780,01:02.560,01:04.340,43,and the valley must be strictly decreasing.
+31,64.900,67.160,2.260,01:04.900,01:07.160,45,This means every value in this middle section
+32,67.160,69.400,2.240,01:07.160,01:09.400,49,must be smaller than the one that came before it.
+33,69.760,71.600,1.840,01:09.760,01:11.600,40,If you find any part that stays the same
+34,71.600,74.500,2.900,01:11.600,01:14.500,52,"or moves upward in this middle gap, the array fails."
+35,74.960,77.020,2.060,01:14.960,01:17.020,43,"When an array successfully rises to a peak,"
+36,77.520,79.980,2.460,01:17.520,01:19.980,53,"falls to a valley and then rises again to the finish,"
+37,80.480,81.160,0.680,01:20.480,01:21.160,14,it is trionic.
+38,81.600,83.780,2.180,01:21.600,01:23.780,47,"By checking these three movements, start climb,"
+39,84.320,85.700,1.380,01:24.320,01:25.700,26,"middle fall and end climb,"
+40,85.700,88.140,2.440,01:25.700,01:28.140,45,we can determine the answer in a single pass.
+41,88.520,89.160,0.640,01:28.520,01:29.160,15,Problem solved.

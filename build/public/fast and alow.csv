@@ -1,0 +1,42 @@
+Index,Start Time (s),End Time (s),Duration (s),Start Timestamp,End Timestamp,Character Count,Text
+1,0.000,2.980,2.980,00:00.000,00:02.980,60,"While you scroll, let's revise this for your next interview."
+2,3.600,5.800,2.200,00:03.600,00:05.800,42,Day 3 of turning you into a logic machine.
+3,6.220,8.640,2.420,00:06.220,00:08.640,39,"Today's weapon, fast and slow pointers."
+4,9.200,11.900,2.700,00:09.200,00:11.900,57,"This pattern looks simple, and that's why people miss it."
+5,12.360,14.300,1.940,00:12.360,00:14.300,41,"You're given a linked list or a sequence,"
+6,14.700,15.780,1.080,00:14.700,00:15.780,29,and they ask something scary.
+7,16.260,16.960,0.700,00:16.260,00:16.960,17,Is there a cycle?
+8,17.440,17.960,0.520,00:17.440,00:17.960,16,Find the middle.
+9,18.320,19.000,0.680,00:18.320,00:19.000,14,Detect a loop.
+10,19.520,20.340,0.820,00:19.520,00:20.340,18,Most people panic.
+11,20.720,21.600,0.880,00:20.720,00:21.600,22,They use extra memory.
+12,21.960,22.720,0.760,00:21.960,00:22.720,15,They overthink.
+13,23.080,23.700,0.620,00:23.080,00:23.700,17,That's a mistake.
+14,24.220,25.140,0.920,00:24.220,00:25.140,23,Here's the smarter way.
+15,25.540,26.160,0.620,00:25.540,00:26.160,17,Use two pointers.
+16,26.640,27.320,0.680,00:26.640,00:27.320,15,One moves slow.
+17,27.640,28.260,0.620,00:27.640,00:28.260,15,One moves fast.
+18,28.680,29.480,0.800,00:28.680,00:29.480,20,Slow moves one step.
+19,29.480,31.140,1.660,00:29.480,00:31.140,21,Fast moves two steps.
+20,31.700,32.480,0.780,00:31.700,00:32.480,18,Now pay attention.
+21,32.840,35.300,2.460,00:32.840,00:35.300,52,"If there's a cycle, fast will eventually catch slow."
+22,35.640,35.780,0.140,00:35.640,00:35.780,4,Why?
+23,35.940,37.860,1.920,00:35.940,00:37.860,39,Because fast is literally chasing slow.
+24,38.440,40.060,1.620,00:38.440,00:40.060,39,"If there's no cycle, fast hits the end."
+25,40.380,40.640,0.260,00:40.380,00:40.640,7,Simple.
+26,41.180,42.200,1.020,00:41.180,00:42.200,17,"Clean, brilliant."
+27,42.860,43.720,0.860,00:42.860,00:43.720,26,Want the middle of a list?
+28,44.040,46.820,2.780,00:44.040,00:46.820,64,"By the time fast reaches the end, slow is already at the middle."
+29,47.080,47.520,0.440,00:47.080,00:47.520,12,No counting.
+30,47.980,48.600,0.620,00:47.980,00:48.600,15,No extra space.
+31,49.100,49.440,0.340,00:49.100,00:49.440,10,No tricks.
+32,49.980,53.160,3.180,00:49.980,00:53.160,58,This drops complexity to O of end time and O of one space.
+33,53.620,54.400,0.780,00:53.620,00:54.400,23,Interviewers love this.
+34,54.780,55.340,0.560,00:54.780,00:55.340,16,Cycle detection.
+35,55.780,56.180,0.400,00:55.780,00:56.180,15,Middle element.
+36,56.560,57.020,0.460,00:56.560,00:57.020,14,Happy numbers.
+37,57.460,58.240,0.780,00:57.460,00:58.240,16,Circular arrays.
+38,58.800,61.260,2.460,00:58.800,01:01.260,57,"Once this clicks, linked list questions stop being scary."
+39,61.700,62.660,0.960,01:01.700,01:02.660,23,Fast and slow pointers.
+40,62.960,63.440,0.480,01:02.960,01:03.440,11,Two speeds.
+41,63.860,64.340,0.480,01:03.860,01:04.340,10,One brain.

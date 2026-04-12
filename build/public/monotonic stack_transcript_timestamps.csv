@@ -1,0 +1,22 @@
+Index,Start Time (s),End Time (s),Duration (s),Start Timestamp,End Timestamp,Character Count,Text
+1,0.000,4.160,4.160,00:00.000,00:04.160,72,"Quick question, why do stocks suddenly crash, but never warn you before?"
+2,4.840,7.380,2.540,00:04.840,00:07.380,58,Day five of turning you into an interview pattern machine.
+3,8.180,12.400,4.220,00:08.180,00:12.400,80,"Today's weapon, monotonic stack, they give you an array and ask scary questions."
+4,12.960,13.720,0.760,00:12.960,00:13.720,22,"Next, greater element?"
+5,14.340,17.440,3.100,00:14.340,00:17.440,49,Previous smaller? Stock span? Daily temperatures?
+6,18.000,20.380,2.380,00:18.000,00:20.380,51,Most people panic. They look left? They look right?
+7,21.100,23.040,1.940,00:21.100,00:23.040,37,Nested loops everywhere. That's slow.
+8,23.480,24.900,1.420,00:23.480,00:24.900,27,And interviewers hate slow.
+9,25.440,28.860,3.420,00:25.440,00:28.860,55,"Here's the smarter way. Use a stack, but not any stack."
+10,28.860,33.180,4.320,00:28.860,00:33.180,75,A monotonic stack. That means the stack is always increasing or decreasing.
+11,33.960,36.640,2.680,00:33.960,00:36.640,57,Now pay attention. You scan the array from left to right.
+12,37.020,39.540,2.520,00:37.020,00:39.540,58,"For each element, while the stack breaks the rule you pop."
+13,39.920,42.900,2.980,00:39.920,00:42.900,67,"When the rule is safe, you push that pop moment. That's the answer."
+14,43.220,47.540,4.320,00:43.220,00:47.540,77,Why? Because the element being popped just found its next greater or smaller.
+15,48.160,51.520,3.360,00:48.160,00:51.520,47,"One push, one pop. No element is touched twice."
+16,52.140,55.060,2.920,00:52.140,00:55.060,54,That's why this works. Time complexity becomes O of N.
+17,55.340,58.240,2.900,00:55.340,00:58.240,65,"No backtracking, no rechecking. This pattern shows up everywhere."
+18,59.000,62.700,3.700,00:59.000,01:02.700,74,"Next, greater element? Daily temperatures? Largest rectangle in histogram?"
+19,63.140,67.520,4.380,01:03.140,01:07.520,81,"Stock span problem? Once this clicks, array problems start feeling unfairly easy."
+20,68.260,71.180,2.920,01:08.260,01:11.180,54,Monotonic stack? Control the stack? Reveal the future?
+21,71.780,72.300,0.520,01:11.780,01:12.300,16,Crack interview.
