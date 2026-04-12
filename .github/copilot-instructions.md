@@ -39,7 +39,7 @@ All ambiguity is resolved using the AMBIGUITY TABLE in PART 17.
 | Audio start (composition frame) | Frame **150** — after the silent scroll animation |
 | Scene 01 always | `Scene01_ScrollTimeline` — 150 frames, **SILENT**, no audio |
 | Last scene always | `Scene{LAST}_Outro` — 362 frames, shows next day topic |
-| Captions | **SVG `<text>`**, `y=1780`, center anchor, **no background rect** |
+| Captions | **SVG `<text>`**, `y=140 (TOP)`, center anchor, **no background rect** |
 
 ### Critical Remotion Rules (read before writing any code)
 
@@ -295,8 +295,9 @@ export const GlobalDefs: React.FC = () => (
   </defs>
 );
 
-// ── Caption — FIXED POSITION, NO BACKGROUND ──────────────────────────────────
-// ALWAYS at y=1780, center x=540, no rect/background behind it
+// ── Caption — FIXED POSITION AT TOP, NO BACKGROUND ───────────────────────────
+// ALWAYS at TOP of canvas: x=540, y=140 (single line) or y=116/y=164 (two lines)
+// NO rect, NO background strip, NO border — just the text
 interface CaptionProps {
   text: string;
   keyWords?: string[];
@@ -310,7 +311,7 @@ export const Caption: React.FC<CaptionProps> = ({
 }) => {
   const localFrame = frame - sceneFrom;
   const opacity =
-    Math.min(1, localFrame / 8) *              // fade in over 8 frames
+    Math.min(1, localFrame / 8) *               // fade in over 8 frames
     Math.min(1, (sceneDuration - localFrame) / 8); // fade out over 8 frames
 
   // Split into words, flag key words for highlight
@@ -334,7 +335,8 @@ export const Caption: React.FC<CaptionProps> = ({
   });
   if (currentLine.length > 0) lines.push(currentLine);
 
-  const baseY = lines.length === 1 ? 1780 : 1762;
+  // TOP positioning: single line at y=140, two lines at y=116 + y=164
+  const baseY = lines.length === 1 ? 140 : 116;
   const lineGap = 48;
 
   return (
@@ -348,12 +350,14 @@ export const Caption: React.FC<CaptionProps> = ({
           fontFamily="'Inter', system-ui, sans-serif"
           fontSize={38}
           fontWeight={700}
+          fill={COLORS.text_caption}  /* CRITICAL: explicit default — never inherit white */
         >
           {lineWords.map((word, i) => {
             const isKey = lowerKeys.some(k =>
               word.toLowerCase().replace(/[.,!?]/g, '').includes(k)
             );
             return (
+              /* Normal words: #1A1A1A  |  Key words: #2563EB  |  NEVER white, NEVER transparent */
               <tspan key={i} fill={isKey ? COLORS.text_highlight : COLORS.text_caption}>
                 {word}{i < lineWords.length - 1 ? ' ' : ''}
               </tspan>
@@ -592,15 +596,15 @@ export const Scene{N}_{Name}: React.FC = () => {
         <PaperBackground />
         <GlobalDefs />
 
-        {/* ── ZONE A — Topic anchor label (y=80–180) ─────────────────────── */}
+        {/* ── ZONE A — Topic anchor label (y=220–300) — below caption strip ── */}
         <g transform={`translate(0, ${labelEntrance.translateY})`} opacity={labelEntrance.opacity}>
-          <SectionLabel text="MODULE NAME · CONCEPT" y={120} opacity={0.55} />
+          <SectionLabel text="MODULE NAME · CONCEPT" y={260} opacity={0.55} />
         </g>
 
-        {/* ── ZONE B — Primary statement (y=190–440) ─────────────────────── */}
+        {/* ── ZONE B — Primary statement (y=320–540) ──────────────────────── */}
         <g transform={`translate(0, ${headlineA.translateY})`} opacity={headlineA.opacity}>
           <text
-            x={60} y={270}
+            x={60} y={400}
             fontFamily="'Inter', system-ui, sans-serif"
             fontSize={72} fontWeight={800}
             fill={COLORS.deep_black}
@@ -610,7 +614,7 @@ export const Scene{N}_{Name}: React.FC = () => {
         </g>
         <g transform={`translate(0, ${headlineB.translateY})`} opacity={headlineB.opacity}>
           <text
-            x={60} y={370}
+            x={60} y={490}
             fontFamily="'Inter', system-ui, sans-serif"
             fontSize={48} fontWeight={400}
             fill={COLORS.sky_blue}
@@ -619,7 +623,7 @@ export const Scene{N}_{Name}: React.FC = () => {
           </text>
         </g>
 
-        {/* ── ZONE C — Main visual content (y=460–1700) ──────────────────── */}
+        {/* ── ZONE C — Main visual content (y=560–1880) ──────────────────── */}
         {/*
           Render complex diagrams, cards, path-draw connectors, counters here.
           Each major element wrapped in <g opacity={cardN.opacity} transform={...translateY...}>
@@ -630,7 +634,7 @@ export const Scene{N}_{Name}: React.FC = () => {
         {/* Example: animated card with spring entrance */}
         <g
           opacity={card1.opacity}
-          transform={`translate(60, ${460 + card1.translateY})`}
+          transform={`translate(60, ${560 + card1.translateY})`}
         >
           <rect
             x={0} y={0} width={960} height={160} rx={16}
@@ -671,7 +675,8 @@ export const Scene{N}_{Name}: React.FC = () => {
             transform={`scale(${pulse})`} style={{ transformOrigin: '0px 0px' }} />
         </g>
 
-        {/* ── CAPTION ZONE — FIXED POSITION, NO BACKGROUND ───────────────── */}
+        {/* ── CAPTION — FIXED AT TOP (y=140), NO BACKGROUND ──────────────── */}
+        {/* Caption renders FIRST in SVG order but visually appears at y=140 (top strip) */}
         {caption && (
           <Caption
             text={caption.text}
@@ -696,11 +701,15 @@ export const Scene{N}_{Name}: React.FC = () => {
 
 ## PART 9 — Scene01_ScrollTimeline EXACT IMPLEMENTATION
 
+> **Day counter rule:** Always show `DAY N / TOTAL` in the top-left of Scene01.
+> Series totals: AI = 120, Java = 105, Daily Mystery/HiddenWorld = 100.
+
 ```tsx
 /**
  * Scene01_ScrollTimeline
  * Duration: 150 frames = 5s (SILENT — no audio plays during this scene)
  * Shows: full day list from architecture file, scrolls to current day N
+ * Shows: "DAY N / TOTAL" progress badge (top-left)
  * Row height: 220px — exactly 6 rows visible at a time
  */
 import React from 'react';
@@ -710,13 +719,14 @@ import { PaperBackground } from '../helpers/components';
 
 interface Props {
   currentDay: number;    // e.g. 27
+  totalDays: number;     // AI=120, Java=105, HiddenWorld=100
   seriesTitle: string;   // e.g. "AGENTIC AI · FIRST PRINCIPLES"
 }
 
 // !! IMPORTANT: Replace this array with EVERY day from the architecture file
 // For AI series: 120 entries from architecture_AI.md
 // For Java series: 105 entries from architecture_java.md
-// For HiddenWorld: 120 entries from architecture.md
+// For HiddenWorld: 100 entries from architecture.md
 const ALL_DAYS = [
   { day: 1,  topic: "What Is Intelligence?" },
   { day: 2,  topic: "Tokens and Language" },
@@ -730,12 +740,10 @@ const VISIBLE = 6;     // rows visible at once
 const VIEW_H  = ROW_H * VISIBLE;                   // 1320px
 const VIEW_Y  = Math.round((1920 - VIEW_H) / 2);   // 300px — top of visible window
 
-export const Scene01_ScrollTimeline: React.FC<Props> = ({ currentDay, seriesTitle }) => {
+export const Scene01_ScrollTimeline: React.FC<Props> = ({ currentDay, totalDays, seriesTitle }) => {
   const frame = useCurrentFrame();
 
   // Scroll from Day 1 at top → current day centered
-  // Target: current day row is at index (currentDay - 1)
-  // Center means: scroll so that (currentDay - 1 - 2.5) rows are above viewport top
   const targetScrollY = -(currentDay - 1 - Math.floor(VISIBLE / 2) + 0.5) * ROW_H;
   const clampedTarget = Math.min(0, Math.max(
     -(ALL_DAYS.length - VISIBLE) * ROW_H,
@@ -752,8 +760,15 @@ export const Scene01_ScrollTimeline: React.FC<Props> = ({ currentDay, seriesTitl
   // Overall scene fade-out at end (frames 130–149)
   const sceneFade = interpolate(frame, [130, 149], [1, 0], { extrapolateRight: 'clamp' });
 
-  // Header fade-in
+  // Header + badge fade-in
   const headerEnter = interpolate(frame, [0, 20], [0, 1], { extrapolateRight: 'clamp' });
+
+  // Progress bar width (currentDay / totalDays * 960px usable width)
+  const progressWidth = (currentDay / totalDays) * 960;
+  const progressEnter = interpolate(frame, [10, 60], [0, progressWidth], {
+    extrapolateRight: 'clamp',
+    easing: Easing.bezier(0.4, 0, 0.2, 1),
+  });
 
   return (
     <AbsoluteFill style={{ background: COLORS.bg_paper }}>
@@ -764,12 +779,39 @@ export const Scene01_ScrollTimeline: React.FC<Props> = ({ currentDay, seriesTitl
       >
         <PaperBackground />
 
+        {/* ── DAY N / TOTAL progress badge — top-left ─────────────────────── */}
+        <g opacity={headerEnter}>
+          {/* Large day counter */}
+          <text
+            x={60} y={90}
+            fontFamily="'Inter', system-ui, sans-serif"
+            fontSize={28} fontWeight={800}
+            fill={COLORS.sky_blue}
+            letterSpacing="0.05em"
+          >
+            DAY {currentDay}
+          </text>
+          <text
+            x={60 + 28 * (String(currentDay).length * 0.7 + 4)}
+            y={90}
+            fontFamily="'Inter', system-ui, sans-serif"
+            fontSize={28} fontWeight={400}
+            fill={COLORS.cool_silver}
+          >
+            / {totalDays}
+          </text>
+          {/* Progress track */}
+          <rect x={60} y={110} width={960} height={6} rx={3} fill={COLORS.deep_black} opacity={0.08} />
+          {/* Progress fill — animates in */}
+          <rect x={60} y={110} width={progressEnter} height={6} rx={3} fill={COLORS.sky_blue} opacity={0.7} />
+        </g>
+
         {/* Header — series title — FIXED, does NOT scroll */}
         <text
-          x={540} y={190}
+          x={540} y={175}
           textAnchor="middle"
           fontFamily="'Inter', system-ui, sans-serif"
-          fontSize={26} fontWeight={500}
+          fontSize={22} fontWeight={500}
           fill={COLORS.cool_silver}
           letterSpacing="0.22em"
           opacity={headerEnter * 0.7}
@@ -969,6 +1011,25 @@ ZERO colored background panels
 ❌ Tailwind animate-* classes — won't render in Remotion
 ❌ <img> native element — use <Img> from remotion
 ❌ background-image CSS — use <Img> from remotion
+❌ @react-three/fiber — ABSOLUTELY NO 3D. Use 2D SVG only.
+❌ @remotion/three / ThreeCanvas — ABSOLUTELY NO 3D.
+❌ three.js / Three.js — ABSOLUTELY NO 3D.
+❌ WebGL / Canvas 3D context — ABSOLUTELY NO 3D.
+❌ framer-motion — CSS-based, breaks Remotion render pipeline
+```
+
+### Animation method — 2D SVG ONLY
+```
+ALL animations in this project are 2D, inline SVG, using remotion hooks:
+  ✅ spring() from 'remotion'
+  ✅ interpolate() from 'remotion'
+  ✅ useCurrentFrame() from 'remotion'
+  ✅ SVG path strokeDashoffset draw
+  ✅ SVG transform (translate, rotate, scale)
+  ✅ Math.sin() / Math.cos() for oscillation
+  ✅ @remotion/transitions for slide/wipe/fade between scenes
+
+NEVER use 3D rendering of any kind. The entire visual language is flat 2D paper art.
 ```
 
 ### Typography minimum sizes
@@ -985,12 +1046,21 @@ Absolute minimum:     28px — never go below this
 
 ### Layout safe zones
 ```
-Top padding:    y ≥ 80px    (nothing above)
-Bottom content: y ≤ 1740px  (leave room for captions)
-Caption zone:   y = 1760–1860 (reserved for captions ONLY)
+Caption zone:   y = 50–200   (TOP STRIP — reserved for captions ONLY)
+Caption line 1: y = 140      (single line) or y=116 (first of two lines)
+Caption line 2: y = 164      (second line, 48px below first)
+Zone A:         y = 220–300  (section label)
+Zone B:         y = 320–540  (headline)
+Zone C:         y = 560–1880 (visual content — main diagram area)
+Bottom padding: y = 1880–1920
 Left margin:    x = 60px
 Right margin:   x = 1020px
 Usable width:   960px
+
+RULES:
+  ✅ No content element above y=220 (caption zone reserved)
+  ✅ No content element below y=1880
+  ✅ Caption ALWAYS at top (y=140 or y=116/164) — never at bottom
 ```
 
 ### Anti-overlap rule
@@ -1002,18 +1072,43 @@ Before placing any element, calculate its bounding box:
 Minimum clearance:
   text-to-text:    24px vertical
   SVG element-to-text: 20px
-  Element-to-edge: 60px left/right, 80px top, 40px above caption zone
+  Element-to-edge: 60px left/right, 220px top (caption zone above), 40px bottom
 ```
 
 ### Captions — FIXED SPECIFICATION (never change these values)
 ```
-Position:     x=540, y=1780, textAnchor="middle"
+Position:     x=540, y=140 (TOP — single line), textAnchor="middle"
+Two lines:    y=116 (line 1), y=164 (line 2), 48px gap
 Font:         Inter, 38px, weight 700
-Lines:        max 52 chars/line; 2nd line at y=1808 if needed
+Lines:        max 52 chars/line
 Background:   NONE — zero rect behind captions
 Border:       NONE
 Highlight:    key words in COLORS.text_highlight (#2563EB)
 Fade:         8 frames in / 8 frames out
+
+CAPTION IS AT THE TOP OF THE CANVAS — NOT the bottom.
+Content zone starts at y=220 (below caption strip).
+```
+
+### Caption color — HARD RULE (enforced without exception)
+```
+Normal caption words:   fill={COLORS.text_caption}   → #1A1A1A  (near-black)
+Key/highlight words:    fill={COLORS.text_highlight}  → #2563EB  (sky blue)
+
+FORBIDDEN caption colors:
+  ❌ fill="white"        ← absolute ban
+  ❌ fill="#FFFFFF"      ← absolute ban
+  ❌ fill="#FFF"         ← absolute ban
+  ❌ fill="transparent"  ← absolute ban
+  ❌ fill={COLORS.bg_paper}  ← SAME AS WHITE ON THIS BACKGROUND — absolute ban
+  ❌ no fill attribute at all on <text> — MUST always have fill={COLORS.text_caption}
+
+The paper background is #F5F0E8 (warm off-white).
+Any light-colored caption text becomes invisible on it.
+Only #1A1A1A (near-black) and #2563EB (blue) are readable on this background.
+
+Always use the Caption component from components.tsx — never hand-write SVG caption text
+in a scene file, as this bypasses the color enforcement.
 ```
 
 ---
@@ -1164,10 +1259,49 @@ Use `<Folder>` to organize series:
 - DO NOT create scenes for things not in the script
 - The CSV transcript is the ONLY source for scene content
 
+### Scene count = phrase group count — EXACT MATCH (no extras)
+```
+Content scenes = exact number of CSV phrase groups. NO MORE. NO LESS.
+
+STRUCTURAL scenes (always present, not counted as content scenes):
+  ✅ Scene01_ScrollTimeline   — 150 frames, silent, always first
+  ✅ Scene{LAST-1}_KeyTakeaway — 120 frames, always second-to-last
+  ✅ Scene{LAST}_Outro         — 362 frames, always last
+
+Content scenes (Scene02 → Scene{LAST-2}):
+  ✅ Exactly 1 scene per CSV phrase group
+  ❌ DO NOT add intro scenes before Scene02 with no CSV phrase
+  ❌ DO NOT add summary/recap scenes after the last CSV phrase
+  ❌ DO NOT add "bonus" scenes for sub-topics not in the CSV
+  ❌ DO NOT extend the last content scene into two scenes without a CSV split
+
+Counting rule:
+  If CSV parsing produces 14 phrase groups → write Scene02 through Scene15 (14 scenes)
+  + Scene16_KeyTakeaway + Scene17_Outro
+  Total scene files: 17 (= 1 scroll + 14 content + 1 takeaway + 1 outro)
+```
+
+### Thematic SVG illustration — MANDATORY in EVERY content scene
+```
+EVERY content scene (Scene02 through Scene{LAST-2}) MUST contain:
+  ✅ At least ONE thematic SVG illustration relevant to the topic
+  ✅ The illustration must be drawn from INLINE SVG paths — not text labels alone
+  ✅ The illustration must animate in (spring entrance or path-draw)
+
+A scene with ONLY text blocks and colored rectangles is REJECTED.
+A scene with SVG boxes that contain only text labels is NOT an illustration — it is a list.
+
+Illustrations are scene-specific: draw what the script is TALKING ABOUT.
+  Java/Train script → draw trains, tracks, stations, tickets, signals, switches
+  AI script        → draw neural connections, agent loops, memory banks, flow arrows
+  HiddenWorld      → draw the specific subject (space = planets/orbits, auto = cars/engines)
+```
+
 ### Visual explanation mandate
 - Each scene must explain its concept WITHOUT audio (muted viewer test)
 - Use SVG diagrams, number callouts, comparison layouts, flow arrows
-- Text-only scenes are acceptable but must use large typographic hierarchy
+- Text-only scenes are REJECTED — every scene needs at least one SVG illustration
+- If a scene is "text-heavy" by nature, add a small supporting icon/diagram at y=1400–1700
 
 ### One concept per scene
 - Exactly ONE main idea per scene
@@ -1177,16 +1311,114 @@ Use `<Folder>` to organize series:
 
 ---
 
-## PART 15 — SERIES-SPECIFIC ACCENT COLORS
+## PART 14B — THEMATIC SVG VOCABULARY BY SERIES
 
-| Series | Primary accent | Secondary | Scroll series title |
-|---|---|---|---|
-| AI | `sky_blue` (#2563EB) | `purple` (#7C3AED) | `"AGENTIC AI · FIRST PRINCIPLES"` |
-| Java | `orange` (#EA580C) | `sky_blue` (#2563EB) | `"NATIONAL RAILWAY · JAVA"` |
-| HiddenWorld 🎮 Gaming | `purple` (#7C3AED) | `sky_blue` | `"HIDDEN WORLD SECRETS"` |
-| HiddenWorld 🚀 Space | `sky_blue` (#2563EB) | `cool_silver` | `"HIDDEN WORLD SECRETS"` |
-| HiddenWorld 🏎️ Auto | `orange` (#EA580C) | `amber` | `"HIDDEN WORLD SECRETS"` |
-| HiddenWorld 🔭 Science | `green` (#16A34A) | `sky_blue` | `"HIDDEN WORLD SECRETS"` |
+> Before writing content scenes, look up this table for the series.
+> Pick the most relevant illustration type for each scene's concept.
+> Draw these entirely as inline SVG `<path>`, `<rect>`, `<circle>`, `<polygon>` etc.
+
+### Java / National Railway Series — SVG elements to draw
+```
+Core objects (draw these in zone C):
+  🚂 Train body:    Locomotive rectangle + cab box + wheels (circles) + smokestack
+  🛤️ Track:         Two parallel <line> elements + cross-tie rects at intervals
+  🏛️ Station:        Wide rect + platform ledge + roof triangle + station name text
+  🎫 Ticket:         Rounded rect + dashed border + seat/class text + perforation dots
+  🚦 Signal light:   Pole rect + signal box + colored circle (red/green) + mounting bracket
+  🔀 Switch/Turnout: Y-shaped path with two track branches
+  📦 Cargo/Freight:  Stack of rect boxes on a flatbed car shape
+  📊 Schedule board: Grid of rows (departure times) with columns (platform/status)
+  💺 Seat map:       Grid of small rect seats with aisle gap in the middle
+  🎟️ Booking form:   Rectangle form with labeled field lines and a CTA button rect
+
+Java/OOP objects (for code concept scenes):
+  📦 Class box:      Rect with header stripe + field list + method list separator line
+  🔗 Inheritance:    Two class boxes with upward arrow (hollow arrowhead)
+  🔄 Interface:      Dashed-border rect labeled <<interface>>
+  ⚙️ Method call:    Horizontal arrow from caller box to callee box with method name label
+
+Railroad network:
+  🗺️ Route map:      Multiple station circles connected by curved path lines
+  🔵 Station node:   Circle with station name + connecting lines radiating outward
+```
+
+### AI / Agentic AI Series — SVG elements to draw
+```
+  🧠 Brain/neural:   Ellipse outline + internal curved lines suggesting folds
+  🔵 Agent node:     Circle with label + arrows pointing to/from other nodes
+  🔄 Feedback loop:  Circular arrow path (arc + arrowhead at end)
+  📋 Memory bank:    Stack of horizontal rect "memory cards" with labels
+  🔍 Search/RAG:     Magnifying circle + document rects with highlighted line
+  🌐 Network:        Multiple circles connected by lines (graph visualization)
+  ⚡ Activation:     Sigmoid curve drawn as SVG path + threshold dashed line
+  📊 Loss curve:     Descending curved line on axis grid
+  🗂️ Context window: Horizontal scrolling rect with token blocks inside
+  🤖 Robot/Agent:    Simple robot head (rect + eyes circles) + body outline
+  ⚙️ Gear/Process:   Circle with 8 teeth drawn as path + inner circle
+  💬 Message bubble: Speech bubble rect with tail pointer
+  🧩 Puzzle piece:   Interlocking shapes showing composition
+```
+
+### HiddenWorld — SVG elements by sub-topic
+```
+Space/Astronomy:
+  🪐 Planet:         Circle + elliptical ring path
+  ⭐ Star field:      Scattered <circle r=2> points
+  🚀 Rocket:         Triangle nose + cylinder body + fin triangles
+  🌍 Earth orbit:    Circle planet + dashed ellipse orbit path
+
+Automotive:
+  🚗 Car:            Rounded rect body + wheel circles + window rect
+  ⚙️ Engine:         Cylinder arrangement with connecting rod paths
+  🏁 Race track:     Oval path with start/finish line
+  📊 RPM gauge:      Semicircle arc + needle line + tick marks
+
+Biology/Nature:
+  🌱 Cell:           Circle + organelle shapes inside
+  🧬 DNA:            Two intertwined sine wave paths
+  🍃 Leaf:           Curved path with center vein line
+
+Physics/Science:
+  ⚡ Circuit:        Wire lines + component symbols (resistor zigzag, capacitor lines)
+  🌊 Wave:           Sine curve SVG path
+  🔭 Telescope:      Cylinder + eyepiece + tripod legs
+```
+
+### Illustration drawing rules
+```
+1. Draw the illustration in ZONE C (y=460–1700)
+2. Size: minimum 200×200px for a hero illustration; minimum 80×80px for supporting icons
+3. Color: use COLORS object only — primary accent for the series
+4. Animate: spring entrance (translateY) + path-draw for lines/paths
+5. Label: add text labels next to or inside the illustration (fontSize ≥ 32px)
+6. DO NOT use emoji characters — draw the shape with SVG primitives
+7. DO NOT use <image> or external SVG files — inline only
+8. If lucide-react has the icon, extract its path data and render as <path> in SVG
+```
+
+---
+
+## PART 15 — SERIES-SPECIFIC CONFIGURATION
+
+| Series | totalDays | Primary accent | Secondary | Scroll series title |
+|---|---|---|---|---|
+| AI | **120** | `sky_blue` (#2563EB) | `purple` (#7C3AED) | `"AGENTIC AI · FIRST PRINCIPLES"` |
+| Java | **105** | `orange` (#EA580C) | `sky_blue` (#2563EB) | `"NATIONAL RAILWAY · JAVA"` |
+| HiddenWorld / Daily Mystery | **100** | Series-dependent | — | `"HIDDEN WORLD SECRETS"` |
+| HiddenWorld 🎮 Gaming | 100 | `purple` (#7C3AED) | `sky_blue` | `"HIDDEN WORLD SECRETS"` |
+| HiddenWorld 🚀 Space | 100 | `sky_blue` (#2563EB) | `cool_silver` | `"HIDDEN WORLD SECRETS"` |
+| HiddenWorld 🏎️ Auto | 100 | `orange` (#EA580C) | `amber` | `"HIDDEN WORLD SECRETS"` |
+| HiddenWorld 🔭 Science | 100 | `green` (#16A34A) | `sky_blue` | `"HIDDEN WORLD SECRETS"` |
+
+### Day counter format in Scene01 (pass as `totalDays` prop)
+```
+AI series:              <Scene01_ScrollTimeline currentDay={N} totalDays={120} seriesTitle="AGENTIC AI · FIRST PRINCIPLES" />
+Java series:            <Scene01_ScrollTimeline currentDay={N} totalDays={105} seriesTitle="NATIONAL RAILWAY · JAVA" />
+HiddenWorld/Mystery:    <Scene01_ScrollTimeline currentDay={N} totalDays={100} seriesTitle="HIDDEN WORLD SECRETS" />
+
+Displayed badge in Scene01: "DAY 27 / 120" (large sky_blue number + cool_silver total)
+Progress bar: fills from left, width = (currentDay/totalDays) × 960px, animated 10→60 frames
+```
 
 ---
 
@@ -1203,7 +1435,10 @@ Before considering a day complete, verify every file:
 
 **components.tsx**
 - [ ] PaperBackground renders `#F5F0E8` rect + dot grain
-- [ ] Caption fixed at y=1780, center anchor x=540, no background rect
+- [ ] Caption fixed at y=140 (TOP), center anchor x=540, no background rect
+- [ ] Caption `<text>` element has explicit `fill={COLORS.text_caption}` (NOT white, NOT missing)
+- [ ] Caption tspan key words use `fill={COLORS.text_highlight}` (#2563EB)
+- [ ] No caption text uses white, transparent, or bg_paper color
 - [ ] No gradient in any component
 
 **Scene01_ScrollTimeline.tsx**
@@ -1212,13 +1447,27 @@ Before considering a day complete, verify every file:
 - [ ] ROW_H=220, VISIBLE=6, VIEW_Y=300
 - [ ] Clip path applied to scrolling rows
 - [ ] Scene fades out at frames 130–149
+- [ ] `totalDays` prop set correctly: AI=120, Java=105, HiddenWorld=100
+- [ ] "DAY N / TOTAL" badge renders at top-left (y≈90) with progress bar
+- [ ] Progress bar fills from left, animated frames 10→60
+
+**Scene count verification (do this BEFORE writing content scenes)**
+- [ ] Count phrase groups from CSV: N groups
+- [ ] Plan exactly N content scene files (Scene02 → Scene{N+1})
+- [ ] No extra "intro" content scene before Scene02
+- [ ] No extra "summary" content scene after Scene{N+1}
+- [ ] Only structural scenes exempt: Scene01 (scroll), Scene{N+2} (takeaway), Scene{N+3} (outro)
 
 **Every content scene**
 - [ ] `<PaperBackground />` is first SVG child
 - [ ] `<GlobalDefs />` is second SVG child (if using arrows)
-- [ ] No element above y=80 (except PaperBackground)
-- [ ] No content element below y=1740
+- [ ] No content element above y=220 (caption zone y=50–200 is reserved — top strip)
+- [ ] No content element below y=1880
 - [ ] Caption is present and uses CAPTIONS array
+- [ ] Caption text uses `fill={COLORS.text_caption}` (#1A1A1A) — NOT white, NOT missing
+- [ ] Caption key words use `fill={COLORS.text_highlight}` (#2563EB)
+- [ ] **Zone C contains ≥ 1 thematic SVG illustration** (train/agent/planet etc. — NOT just text boxes)
+- [ ] The SVG illustration is topic-relevant (see PART 14B vocabulary)
 - [ ] All colors from COLORS object
 - [ ] No gradient, no blur filter, no emoji
 - [ ] All font sizes ≥ 28px
@@ -1239,6 +1488,11 @@ Before considering a day complete, verify every file:
 **Root.tsx**
 - [ ] New composition registered with correct TOTAL_FRAMES
 - [ ] Composition inside appropriate `<Folder>`
+
+**Build verification (MANDATORY — day is NOT complete until this passes)**
+- [ ] Run `npm run build` — zero TypeScript errors
+- [ ] Run `npm run build` again after any error fixes — confirm clean pass
+- [ ] If build fails: fix errors, do NOT skip to next day
 
 ---
 
@@ -1307,10 +1561,10 @@ If the scroll timeline ALL_DAYS array seems too long:
   → Keep it. Full list is required. 120 entries for AI/HiddenWorld, 105 for Java.
 
 If a caption is too long (>52 chars):
-  → Split into 2 lines at y=1762 and y=1810. Do not shorten the text.
+  → Split into 2 lines at y=116 and y=164. Do not shorten the text.
 
-If an SVG element would go below y=1740:
-  → Reduce font size or compress spacing. Hard limit: content stays above y=1740.
+If an SVG element would go below y=1880:
+  → Reduce font size or compress spacing. Hard limit: content stays above y=1880.
 
 If unsure which pattern (A/B/C/D/E) to use for a scene:
   → Read the spoken phrase. Number/stat → Pattern D. Comparison → Pattern B.
@@ -1392,7 +1646,7 @@ Before starting any chunk — whether it's chunk B of day 1 or chunk E of day 5 
 ║  5. Confirm the 6 critical rules from memory:                ║
 ║     • Background = #F5F0E8 on EVERY scene                    ║
 ║     • Audio in <Sequence from={150}> NOT from={0}            ║
-║     • Caption at y=1780, NO background rect                  ║
+║     • Caption at y=140 (TOP), NO background rect                  ║
 ║     • No gradient, no emoji, no CSS animation                ║
 ║     • premountFor={30} on every <Sequence>                   ║
 ║     • Every scene ≥ 300 lines, spring() on every entrance    ║
@@ -1427,7 +1681,7 @@ DAY [N] — "[Topic]" — CHUNK MAP
 │ CHUNK C — helpers/components.tsx                                    │
 │ Write: PaperBackground, GlobalDefs, Caption, CornerAccents,         │
 │        Divider, SectionLabel.                                       │
-│ Verify: Caption y=1780, no background rect, dot grain in paper.     │
+│ Verify: Caption y=140 (TOP), no background rect, dot grain in paper.     │
 └─────────────────────────────────────────────────────────────────────┘
           ↓ ⟳ RE-READ FULL INSTRUCTIONS
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -1471,6 +1725,16 @@ DAY [N] — "[Topic]" — CHUNK MAP
 │ Write: AbsoluteFill + Audio in Sequence from={150} + all scenes     │
 │        with premountFor={30} + correct TOTAL_FRAMES in comment.     │
 │ Verify: Audio from={150} ✓  All premountFor={30} ✓  All imports ✓  │
+└─────────────────────────────────────────────────────────────────────┘
+          ↓
+┌─────────────────────────────────────────────────────────────────────┐
+│ REBUILD — Run TypeScript build to catch errors                      │
+│ Command: npm run build                                              │
+│ If errors: fix ALL TypeScript/import errors before proceeding.      │
+│ Do NOT mark the day complete if the build fails.                    │
+│ Common errors to fix: missing imports, wrong component names,       │
+│   SCENE_TIMING key typos, incorrect TOTAL_FRAMES value.            │
+│ After fixing: re-run npm run build until it passes.                │
 └─────────────────────────────────────────────────────────────────────┘
 
 Print: ✅ DAY [N] COMPLETE marker (defined in PART 19 below)
@@ -1518,13 +1782,15 @@ CHUNK H → Scenes 17+    (if needed)
 CHUNK I → KeyTakeaway + Outro
 ⟳ RE-READ (full)
 CHUNK J → Scene.tsx
+🔨 REBUILD → npm run build (fix ALL errors before continuing)
 
-✅ DAY N1 COMPLETE
+✅ DAY N1 COMPLETE (only after build passes)
 ⟳ RE-READ (full) — mandatory before next day
 
 ─────────────── DAY N2 ───────────────
 (same chunk sequence as Day N1)
-✅ DAY N2 COMPLETE
+🔨 REBUILD → npm run build
+✅ DAY N2 COMPLETE (only after build passes)
 ⟳ RE-READ (full)
 
 ─────────────── DAY N3+ ─────────────
@@ -1544,7 +1810,7 @@ Print final batch report
 ── CHUNK [LETTER] ── DAY [N] ── [description] ──────────────────────────
 ⟳ Reading .github/copilot-instructions.md ... done
 ⟳ Reading remotion-best-practices.md ... done
-⟳ Confirmed: #F5F0E8 background, audio frame 150, caption y=1780, no gradient
+⟳ Confirmed: #F5F0E8 background, audio frame 150, caption y=140 (TOP), no gradient
 Writing [filename] ...
 ```
 
@@ -1559,8 +1825,23 @@ fill in "confirmed" — it re-reads until it can.
 ── CHUNK [LETTER] DONE ── DAY [N] ──────────────────────────────────────
 File: [filename]
 Lines: [N]
-Verified: background ✓ | no gradient ✓ | caption ✓ | font sizes ✓
+Verified: background ✓ | no gradient ✓ | caption ✓ | font sizes ✓ | thematic SVG ✓
 ─────────────────────────────────────────────────────────────────────────
+```
+
+### DAY COMPLETE MARKER (after build passes)
+
+```
+✅ DAY [N] COMPLETE — "[Day Topic]"
+   Series:   [AI | Java | HiddenWorld]
+   Files:    [total count]
+   Scenes:   [content scene count] content + 1 scroll + 1 takeaway + 1 outro
+   CSV phrases mapped: [N] → [N] content scenes (exact match ✓)
+   Frames:   [TOTAL_FRAMES]
+   Audio:    ✅ public/audio/[filename].wav
+   Build:    ✅ npm run build — 0 errors
+   Caption colors: ✅ #1A1A1A normal, #2563EB highlight
+   Thematic SVGs:  ✅ present in all content scenes
 ```
 
 ---
@@ -1723,7 +2004,7 @@ Repeat this EXACT loop for each day, in order. Never skip a step.
 ║  STEP 4.2 — WRITE helpers/components.tsx                     ║
 ║    - PaperBackground (bg_paper rect + dot grain)             ║
 ║    - GlobalDefs (arrow marker)                               ║
-║    - Caption (y=1780, no background, key-word highlighting)  ║
+║    - Caption (y=140 (TOP), no background, key-word highlighting)  ║
 ║    - CornerAccents, Divider, SectionLabel                    ║
 ║    ✓ Verify: PaperBackground uses #F5F0E8                    ║
 ║    ✓ Verify: Caption has NO background rect                  ║
@@ -1745,8 +2026,8 @@ Repeat this EXACT loop for each day, in order. Never skip a step.
 ║    - Zone A: SectionLabel (module name)                      ║
 ║    - Zone B: headline (matches spoken phrase exactly)        ║
 ║    - Zone C: visual diagram/layout                           ║
-║    - Caption at y=1780 with correct keyWords                 ║
-║    ✓ Verify: NO element above y=80 or below y=1740           ║
+║    - Caption at y=140 (TOP) with correct keyWords                 ║
+║    ✓ Verify: NO content element above y=220 or below y=1880  ║
 ║    ✓ Verify: NO overlapping bounding boxes                   ║
 ║    ✓ Verify: NO gradient, glow, emoji                        ║
 ║    ✓ Verify: ALL colors from COLORS object                   ║
@@ -1847,7 +2128,7 @@ Root.tsx: Updated with X new compositions
 All backgrounds: ✅ #F5F0E8 paper
 No gradients:    ✅ verified
 No emojis:       ✅ verified
-Captions fixed:  ✅ y=1780, no background
+Captions fixed:  ✅ y=140 (TOP), no background
 Audio delayed:   ✅ Sequence from={150} on all days
 
 Run: npm run dev — to preview in Remotion Studio
@@ -2081,31 +2362,25 @@ import { fade } from '@remotion/transitions/fade';
 </TransitionSeries>
 ```
 
-#### C. `@react-three/fiber` + `@remotion/three` (USE for 3D hero scenes)
-```tsx
-import { ThreeCanvas } from '@remotion/three';
-import { Canvas } from '@react-three/fiber';
-
-// Use for: rotating 3D diagrams, particle fields, 3D text, spinning geometry
-// Mount inside AbsoluteFill alongside the SVG layer
-// Keep geometries simple — boxes, spheres, toruses — not complex GLTF meshes
-// Animate using useCurrentFrame() → pass frame as uniform to shaders or as rotation
-
-// Example: 3D spinning torus knot hero
-<ThreeCanvas width={1080} height={1920} style={{ position: 'absolute', inset: 0 }}>
-  <ambientLight intensity={0.6} />
-  <directionalLight position={[5, 5, 5]} intensity={1.2} />
-  <mesh rotation={[frame * 0.01, frame * 0.02, 0]}>
-    <torusKnotGeometry args={[2, 0.5, 128, 16]} />
-    <meshStandardMaterial color="#2563EB" wireframe={false} />
-  </mesh>
-</ThreeCanvas>
+#### C. 3D libraries — COMPLETELY FORBIDDEN
 ```
+❌ @react-three/fiber   — DO NOT import or use
+❌ @remotion/three      — DO NOT import or use
+❌ three / Three.js     — DO NOT import or use
+❌ ThreeCanvas          — DO NOT use
+❌ WebGL / canvas 3D    — DO NOT use
 
-**When to use 3D:**
-- Opening hero scene where the concept is mechanical/spatial (rockets, chips, physics)
-- Scenes where a 3D diagram communicates depth (layers, stacks, networks)
-- Do NOT use 3D for text-heavy scenes — SVG is better for readability
+This project is STRICTLY 2D. All visual complexity is achieved through:
+  → SVG primitives (path, rect, circle, polygon, text)
+  → spring() + interpolate() animation
+  → strokeDashoffset path-draw effects
+  → SVG transform (translate/rotate/scale) driven by frame math
+  → Math.sin/cos oscillation for organic motion
+  → Layered 2D elements for depth illusion (parallax by translate only)
+
+If you feel you need 3D for a concept — instead draw a flat diagram using
+SVG shapes that COMMUNICATES the same idea without 3D rendering.
+```
 
 #### D. SVG inline animations (USE IN EVERY SCENE for diagrams)
 ```tsx
@@ -2297,6 +2572,8 @@ All elements must be connected where logical — use SVG path-draw connectors, n
 ❌ lucide-react icon rendered at < 48px
 ❌ Using framer-motion — it is FORBIDDEN (CSS-based, breaks Remotion render)
 ❌ Using CSS transition: or animation: anywhere
+❌ Using @react-three/fiber, @remotion/three, or three.js — ALL 3D is FORBIDDEN
+❌ Using ThreeCanvas or any WebGL/3D context
 ```
 
 ---
@@ -2325,7 +2602,7 @@ Every scene file must follow this section ordering:
       - Zone A (section label with spring entrance)
       - Zone B (headline with per-word spring)
       - Zone C (diagrams, cards, connectors — fully filled)
-      - Caption (LAST, fixed y=1780)
+      - Caption (LAST, fixed y=140 (TOP))
 ```
 
 If you follow this structure fully, the file will naturally reach 300+ lines.

@@ -9,6 +9,7 @@ import { MoonScene } from "./Moon/Scene";
 import { JavaDay32Scene } from "./JavaDay32/Scene";
 import { JavaDay33Scene } from "./JavaDay33/Scene";
 import { JavaDay34Scene } from "./JavaDay34/Scene";
+import { ArtemisDay3Scene } from "./ArtemisDay3/Scene";
 import "./style.css";
 
 export const RemotionRoot: React.FC = () => {
@@ -84,6 +85,16 @@ export const RemotionRoot: React.FC = () => {
         id="JavaDay34"
         component={JavaDay34Scene}
         durationInFrames={3146}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+
+      {/* ── Artemis II Series ───────────────────────────────── */}
+      <Composition
+        id="ArtemisDay3"
+        component={ArtemisDay3Scene}
+        durationInFrames={3006}
         fps={30}
         width={1080}
         height={1920}
