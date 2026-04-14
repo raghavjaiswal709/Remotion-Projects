@@ -34,13 +34,15 @@ All ambiguity is resolved using the AMBIGUITY TABLE in PART 17.
 |---|---|
 | Canvas | 1080 × 1920 px portrait |
 | FPS | 30 |
-| Background | `#1D1D1C` dark (Claude-style) + white grid — **every single scene, zero exceptions** |
-| Font | **`'Galaxie Copernicus ExtraBold', Georgia, serif`** — every text element, every scene |
+| Background | `#0D0D0D` near-black + subtle white grid (120px cells, `rgba(255,255,255,0.06)`) — **every scene, zero exceptions** |
+| Card bg | `#1A1A1A` for bento card tiles |
+| Font | **`'Galaxie Copernicus ExtraBold', Georgia, serif`** — every text element; use `font-style="italic"` for key terms/emphasis |
 | Audio file location | Must be in `public/audio/` for `staticFile()` to work |
-| Audio start (composition frame) | Frame **150** — after the silent scroll animation |
-| Scene 01 always | `Scene01_ScrollTimeline` — 150 frames, **SILENT**, no audio |
-| Last scene always | `Scene{LAST}_Outro` — 362 frames, shows next day topic |
+| Audio start (composition frame) | Frame **0** — audio plays from the very first frame, no silent intro |
+| Structural scenes | **NONE** — no ScrollTimeline, no KeyTakeaway, no Outro. Video = script duration only |
+| Total frames | `Math.ceil(audioSeconds * 30)` — composition length equals audio length exactly |
 | Captions | **SVG `<text>`**, `y=1860 (BOTTOM)`, center anchor, **white fill, Galaxie Copernicus ExtraBold** |
+| Illustrations | **MANDATORY massive realistic SVG** in every scene — detailed robots/agents for AI, detailed trains for Java |
 
 ### Series auto-detection — accent color is set automatically by series name
 
@@ -121,49 +123,63 @@ src/Day{N}/
 ├── Scene.tsx                           ← orchestrator
 ├── helpers/
 │   ├── timing.ts                       ← SCENE_TIMING, COLORS, CAPTIONS, helpers
-│   └── components.tsx                  ← PaperBackground, Caption, shared SVGs
+│   └── components.tsx                  ← DarkBackground, Caption, shared SVGs
 └── frames/
-    ├── Scene01_ScrollTimeline.tsx      ← ALWAYS FIRST — silent, 150 frames
-    ├── Scene02_{PhraseName}.tsx        ← first audio-synced content scene
-    ├── Scene03_{PhraseName}.tsx
+    ├── Scene01_{PhraseName}.tsx        ← first CSV phrase (audio frame 0)
+    ├── Scene02_{PhraseName}.tsx
     ├── ...
-    ├── Scene{N-1}_KeyTakeaway.tsx      ← 120 frames
-    └── Scene{N}_Outro.tsx              ← 362 frames, next day preview
+    └── Scene{N}_{PhraseName}.tsx       ← last CSV phrase (audio end)
+
+NO Scene01_ScrollTimeline — REMOVED (no silent intro)
+NO KeyTakeaway scene — REMOVED
+NO Outro scene — REMOVED
+Total scene count = number of CSV phrase groups exactly
 ```
 
 ---
 
 ## PART 4 — FRAME MATH (commit this to memory)
 
-```typescript
-const SCROLL_FRAMES  = 150;   // Scene01: silent scroll, no audio
-const TAKEAWAY_GAP   = 30;    // 1s gap between last content scene and takeaway
-const TAKEAWAY_DUR   = 120;   // Scene{LAST-1}: key takeaway
-const OUTRO_DUR      = 362;   // Scene{LAST}: outro + next day
+**SIMPLE: video = audio duration. No structural scenes. No overhead.**
 
+```typescript
 // Given: audio_duration_seconds from CSV last row End Time
-const AUDIO_FRAMES   = Math.ceil(audio_duration_seconds * 30);
-const AUDIO_END      = SCROLL_FRAMES + AUDIO_FRAMES;           // last audio frame
-const TAKEAWAY_FROM  = AUDIO_END + TAKEAWAY_GAP;               // takeaway starts
-const OUTRO_FROM     = TAKEAWAY_FROM + TAKEAWAY_DUR;           // outro starts
-const TOTAL_FRAMES   = OUTRO_FROM + OUTRO_DUR;                 // composition total
+const TOTAL_FRAMES = Math.ceil(audio_duration_seconds * 30);
 
 // Content scene frame offset:
-// CSV gives timestamps in seconds from audio start (0s)
-// In composition: audio starts at frame 150
-// Therefore:
-scene_from = SCROLL_FRAMES + Math.round(csv_start_seconds * 30);
-scene_duration = Math.max(60, Math.round((csv_end_seconds - csv_start_seconds) * 30) + 18);
-//                                                                                       ↑ 18-frame buffer
+// Audio starts at frame 0 — CSV timestamps ARE composition frame timestamps
+scene_from = Math.round(csv_start_seconds * 30);
+
+// Duration: use gap-filling approach (no overlaps)
+// For all scenes except last:
+scene_duration = next_scene_from - current_scene_from;
+// For last scene:
+last_scene_duration = TOTAL_FRAMES - last_scene_from;
+
+// Or use calculated duration capped at available gap:
+scene_duration = Math.max(60, Math.min(
+  Math.round((csv_end_seconds - csv_start_seconds) * 30) + 18,
+  next_scene_from - current_scene_from
+));
 ```
 
-**Concrete example** (Day 27, audio = 79.02s):
+**Concrete example** (Day 27, audio = 79.020s):
 ```
-AUDIO_FRAMES  = ceil(79.02 * 30) = 2371
-AUDIO_END     = 150 + 2371 = 2521
-TAKEAWAY_FROM = 2521 + 30  = 2551
-OUTRO_FROM    = 2551 + 120 = 2671
-TOTAL_FRAMES  = 2671 + 362 = 3033
+TOTAL_FRAMES = ceil(79.020 * 30) = 2371
+
+Scene froms (csv_start * 30):
+  s01: round(0.000 * 30) = 0
+  s02: round(5.320 * 30) = 160
+  s03: round(8.860 * 30) = 266
+  ...
+  s17: round(76.960 * 30) = 2309
+  s17 duration: 2371 - 2309 = 62
+```
+
+**OLD formula (FORBIDDEN — do not use):**
+```
+❌ SCROLL_FRAMES + AUDIO_FRAMES + 30 + 120 + 362  ← old formula with structural scenes
+❌ scene_from = 150 + Math.round(csv_start * 30)  ← old formula with +150 offset
 ```
 
 ---
@@ -190,10 +206,10 @@ const ACCENT_R = 118, ACCENT_G = 171, ACCENT_B = 174; // ← REPLACE RGB values 
 
 // ── Color palette ── use ONLY these, never raw hex codes outside this object ──
 export const COLORS = {
-  // Backgrounds
-  bg_primary:     '#1D1D1C',   // THE ONLY background — EVERY scene, zero exceptions
-  bg_secondary:   '#2C2C2B',   // bento card / tile background
-  bg_card:        '#2C2C2B',   // alias for bg_secondary
+  // Backgrounds — near-black (much darker than before)
+  bg_primary:     '#0D0D0D',   // THE ONLY background — EVERY scene, zero exceptions
+  bg_secondary:   '#1A1A1A',   // bento card / tile background
+  bg_card:        '#1A1A1A',   // alias for bg_secondary
 
   // Text (light on dark)
   white:          '#FFFFFF',   // primary text on dark background
@@ -202,8 +218,8 @@ export const COLORS = {
   text_caption:   '#FFFFFF',   // subtitle at BOTTOM (white on dark)
   text_highlight: SERIES_ACCENT,            // key-word highlight in captions
 
-  // Grid
-  grid_line:      'rgba(255,255,255,0.5)',  // grid on dark bg (50% white)
+  // Grid — larger cells (120px), very subtle (0.06 opacity, barely visible)
+  grid_line:      'rgba(255,255,255,0.06)', // grid on dark bg (6% white — subtle)
 
   // Series accent
   accent:         SERIES_ACCENT,            // primary accent (series-specific)
@@ -211,50 +227,42 @@ export const COLORS = {
   accent_mid:     `rgba(${ACCENT_R},${ACCENT_G},${ACCENT_B},0.30)`, // 30% border
 
   // Semantic aliases (for backwards compat references)
-  deep_black:     '#1D1D1C',   // maps to bg_primary
+  deep_black:     '#0D0D0D',   // maps to bg_primary
   cool_silver:    'rgba(255,255,255,0.55)', // maps to text_muted
   vibrant_red:    '#F7374F',   // error/danger
 } as const;
 
-// ── Frame constants ──────────────────────────────────────────────────────────
-const SCROLL_FRAMES = 150;
-
 // ── Scene timing ─────────────────────────────────────────────────────────────
-// ALL 'from' values are COMPOSITION frames (not audio-relative frames)
-// Content scenes: from = 150 + Math.round(csv_start_seconds * 30)
+// Audio starts at frame 0 — scene froms = Math.round(csv_start_seconds * 30)
+// NO s01 ScrollTimeline, NO s_takeaway, NO s_outro
+// scene_duration = next_scene_from - current_scene_from (gapless sequential)
+// TOTAL_FRAMES = Math.ceil(audio_duration_seconds * 30)
 export const SCENE_TIMING = {
 
-  // Scene 01 — Scrolling Timeline (SILENT, pre-audio)
-  s01: { from: 0,   duration: 150 },
+  // Scene 01 — {first phrase from CSV} [{csv_start}s → {csv_end}s]
+  s01: { from: Math.round(0.000 * 30), duration: 160 },
 
-  // Scene 02 — {phrase from script} [{csv_start}s → {csv_end}s]
-  s02: { from: SCROLL_FRAMES + Math.round(0.000 * 30), duration: 142 },
-
-  // Scene 03 — {phrase} [{csv_start}s → {csv_end}s]
-  s03: { from: SCROLL_FRAMES + Math.round(5.320 * 30), duration: 90  },
+  // Scene 02 — {second phrase} [{csv_start}s → {csv_end}s]
+  s02: { from: Math.round(5.320 * 30), duration: 106 },
 
   // ↓ Add all content scenes here following the same pattern
-  // s04: { from: SCROLL_FRAMES + Math.round(X.XXX * 30), duration: YYY },
-
-  // Scene {LAST-1} — Key Takeaway
-  s_takeaway: { from: 2551, duration: 120 },
-
-  // Scene {LAST} — Outro
-  s_outro:    { from: 2671, duration: 362 },
+  // s03: { from: Math.round(X.XXX * 30), duration: YYY },
+  // ...
+  // sNN: { from: Math.round(last_csv_start * 30), duration: TOTAL_FRAMES - last_from },
 
 } as const;
 
 // ── Captions ──────────────────────────────────────────────────────────────────
-// One caption entry per content scene
+// One caption entry per content scene (all scenes are content scenes)
 // 'from' and 'duration' must match the scene's SCENE_TIMING entry
-// 'keyWords' = technical terms, numbers, proper nouns to highlight in sky_blue
+// 'keyWords' = technical terms, numbers, proper nouns to highlight in accent color
 export const CAPTIONS: Array<{
   text: string;
   keyWords: string[];
   from: number;
   duration: number;
 }> = [
-  { text: "This is day 27 of Agentic AI.", keyWords: ["27", "Agentic AI"], from: 150, duration: 142 },
+  { text: "First phrase from script.", keyWords: ["key", "word"], from: 0, duration: 160 },
   // Add one entry per content scene...
 ];
 
@@ -302,27 +310,28 @@ const FONT = "'Galaxie Copernicus ExtraBold', Georgia, serif";
 
 // ── Dark background with grid — USE IN EVERY SINGLE SCENE ─────────────────────
 // Always the FIRST element inside <svg>
-// Grid: 80px cells, white lines at 50% opacity
+// Background: #0D0D0D near-black (very dark)
+// Grid: 120px cells (larger, less dense), rgba(255,255,255,0.06) (barely visible)
 export const DarkBackground: React.FC = () => (
   <g>
-    {/* Primary dark base */}
+    {/* Primary near-black base */}
     <rect width={1080} height={1920} fill={COLORS.bg_primary} />
-    {/* Horizontal grid lines (every 80px) */}
-    {Array.from({ length: Math.ceil(1920 / 80) + 1 }, (_, i) => (
+    {/* Horizontal grid lines (every 120px) — very subtle */}
+    {Array.from({ length: Math.ceil(1920 / 120) + 1 }, (_, i) => (
       <line
         key={`h${i}`}
-        x1={0} y1={i * 80}
-        x2={1080} y2={i * 80}
+        x1={0} y1={i * 120}
+        x2={1080} y2={i * 120}
         stroke={COLORS.grid_line}
         strokeWidth={1}
       />
     ))}
-    {/* Vertical grid lines (every 80px) */}
-    {Array.from({ length: Math.ceil(1080 / 80) + 1 }, (_, i) => (
+    {/* Vertical grid lines (every 120px) — very subtle */}
+    {Array.from({ length: Math.ceil(1080 / 120) + 1 }, (_, i) => (
       <line
         key={`v${i}`}
-        x1={i * 80} y1={0}
-        x2={i * 80} y2={1920}
+        x1={i * 120} y1={0}
+        x2={i * 120} y2={1920}
         stroke={COLORS.grid_line}
         strokeWidth={1}
       />
@@ -476,51 +485,44 @@ export const SectionLabel: React.FC<{ text: string; y?: number; opacity?: number
 /**
  * Day {N} — "{Topic}"
  * Series: {AI | Java | HiddenWorld}
- * Total: {TOTAL_FRAMES} frames @ 30fps = ~{seconds}s
+ * Total: {TOTAL_FRAMES} frames @ 30fps = ~{audio_seconds}s (= audio duration exactly)
  * Audio: public/audio/{filename}
  *
+ * NO structural scenes — video length = script/audio length only
+ * Audio plays from frame 0 — no delay, no silent intro
+ *
  * SCENE SEQUENCE:
- * Scene01  frames   0–149   ScrollTimeline (SILENT)
- * Scene02  frames 150–...   {phrase}
+ * Scene01  frames   0–…    {first CSV phrase}
+ * Scene02  frames …–…     {second CSV phrase}
  * ...
- * Scene{N-1} frames ...–...  KeyTakeaway
- * Scene{N}   frames ...–...  Outro
+ * Scene{N} frames …–{TOTAL_FRAMES-1}  {last CSV phrase}
  */
 import React from 'react';
-import { AbsoluteFill, Audio, Sequence, staticFile } from 'remotion';
+import { AbsoluteFill, Audio, staticFile, Sequence } from 'remotion';
 import { SCENE_TIMING, COLORS } from './helpers/timing';
 
-import { Scene01_ScrollTimeline } from './frames/Scene01_ScrollTimeline';
+import { Scene01_... } from './frames/Scene01_...';
 import { Scene02_... } from './frames/Scene02_...';
-// ... all imports
+// ... all content scene imports (no ScrollTimeline, no KeyTakeaway, no Outro)
 
 export const Day{N}Scene: React.FC = () => {
   return (
-    // AbsoluteFill background must match bg_primary (#1D1D1C) — acts as fallback
+    // AbsoluteFill background must match bg_primary (#0D0D0D) — acts as fallback
     <AbsoluteFill style={{ background: COLORS.bg_primary }}>
 
-      {/*
-        Audio starts at composition frame 150 (after silent scroll).
-        Wrap in <Sequence from={150}> so it delays by 150 frames.
-        useCurrentFrame() inside Audio's volume callback is audio-relative.
-      */}
-      <Sequence from={150} durationInFrames={Math.ceil({audio_seconds} * 30)}>
-        <Audio src={staticFile('audio/ai{N}.wav')} startFrom={0} />
-      </Sequence>
+      {/* Audio plays from frame 0 — no Sequence wrapper, no delay */}
+      <Audio src={staticFile('audio/ai{N}.wav')} startFrom={0} />
 
-      {/* Scene 01 — Scrolling Day Timeline (SILENT, no audio) */}
+      {/* Scene 01 — First content scene (audio frame 0) */}
       <Sequence
         from={SCENE_TIMING.s01.from}
         durationInFrames={SCENE_TIMING.s01.duration}
         premountFor={30}
       >
-        <Scene01_ScrollTimeline
-          currentDay={N}
-          seriesTitle="AGENTIC AI · FIRST PRINCIPLES"
-        />
+        <Scene01_... />
       </Sequence>
 
-      {/* Scene 02 — First content scene */}
+      {/* Scene 02 */}
       <Sequence
         from={SCENE_TIMING.s02.from}
         durationInFrames={SCENE_TIMING.s02.duration}
@@ -530,29 +532,8 @@ export const Day{N}Scene: React.FC = () => {
       </Sequence>
 
       {/* ... all content scenes with premountFor={30} on each */}
-
-      {/* Key Takeaway */}
-      <Sequence
-        from={SCENE_TIMING.s_takeaway.from}
-        durationInFrames={SCENE_TIMING.s_takeaway.duration}
-        premountFor={30}
-      >
-        <Scene{LAST-1}_KeyTakeaway />
-      </Sequence>
-
-      {/* Outro */}
-      <Sequence
-        from={SCENE_TIMING.s_outro.from}
-        durationInFrames={SCENE_TIMING.s_outro.duration}
-        premountFor={30}
-      >
-        <Scene{LAST}_Outro
-          currentDay={N}
-          nextDay={N+1}
-          nextTopic="{Day N+1 topic from architecture file}"
-          seriesTitle="AGENTIC AI · FIRST PRINCIPLES"
-        />
-      </Sequence>
+      {/* NO KeyTakeaway sequence */}
+      {/* NO Outro sequence */}
 
     </AbsoluteFill>
   );
@@ -772,11 +753,17 @@ export const Scene{N}_{Name}: React.FC = () => {
 
 ---
 
-## PART 9 — Scene01_ScrollTimeline EXACT IMPLEMENTATION
+## PART 9 — Scene01_ScrollTimeline — ⛔ REMOVED
 
-> **Day counter rule:** Always show `DAY N / TOTAL` in the top-left of Scene01.
-> Series totals: AI = 120, Java = 105, Mystery/HiddenWorld = 100, SysDesign = 120, DSA = 120.
-> **This scene uses DarkBackground + grid + Galaxie Copernicus ExtraBold.**
+> **Scene01_ScrollTimeline has been REMOVED from the generation pipeline.**
+> No silent intro scroll. No day counter intro. Video starts at frame 0 with audio.
+> DO NOT generate a Scene01_ScrollTimeline.tsx file.
+> DO NOT add a KeyTakeaway scene. DO NOT add an Outro scene.
+>
+> If old code has ScrollTimeline imports, DELETE them.
+> If old SCENE_TIMING has s01 as scroll, REPLACE with first CSV phrase.
+
+**DEPRECATED — do not implement this pattern:**
 
 ```tsx
 /**
@@ -1010,12 +997,13 @@ When in doubt — **split**. Never merge two distinct concepts.
 ### Background — NON-NEGOTIABLE
 ```
 EVERY scene: <DarkBackground /> as FIRST SVG child (NOT PaperBackground)
-EVERY AbsoluteFill: style={{ background: COLORS.bg_primary }}   ← #1D1D1C
-ZERO light/white backgrounds — this is a DARK theme
+EVERY AbsoluteFill: style={{ background: COLORS.bg_primary }}   ← #0D0D0D (near-black)
+ZERO light/white backgrounds — this is a DARK near-black theme
 ZERO old paper (#F5F0E8) backgrounds — ABSOLUTELY FORBIDDEN
-ZERO pure black (#000000) — use #1D1D1C
-ZERO colored background panels (only #1D1D1C + #2C2C2B bento cards)
-Grid drawn inside DarkBackground: horizontal + vertical lines, 80px cells, rgba(255,255,255,0.5)
+ZERO old dark gray (#1D1D1C) — use #0D0D0D (much darker)
+ZERO colored background panels (only #0D0D0D + #1A1A1A bento cards)
+Grid drawn inside DarkBackground: horizontal + vertical lines, 120px cells, rgba(255,255,255,0.06)
+Grid must be barely visible — NOT prominent. Just a subtle texture hint.
 ```
 
 ### Font — NON-NEGOTIABLE
@@ -1024,6 +1012,12 @@ EVERY text element in EVERY scene: fontFamily="'Galaxie Copernicus ExtraBold', G
 fontWeight MUST always be 800 (ExtraBold is weight 800)
 NO Inter, NO system-ui, NO sans-serif as primary font
 ALWAYS bold, ALWAYS large — minimum 32px across the board
+
+ITALIC is ALLOWED and ENCOURAGED for key terms and emphasis:
+  ✅ fontStyle="italic" on specific words/terms being defined
+  ✅ Use italic for the term being introduced (e.g., "tool", "observation", "agent")
+  ✅ Combine with accent color for maximum emphasis
+  Example: <text fontFamily={FONT} fontWeight={800} fontStyle="italic" fill={COLORS.accent}>tool</text>
 ```
 
 ### Colors — ONLY FROM COLORS OBJECT
@@ -1388,42 +1382,53 @@ Use `<Folder>` to organize series:
 - DO NOT create scenes for things not in the script
 - The CSV transcript is the ONLY source for scene content
 
-### Scene count = phrase group count — EXACT MATCH (no extras)
+### Scene count = phrase group count — EXACT MATCH (no extras, no structural)
 ```
 Content scenes = exact number of CSV phrase groups. NO MORE. NO LESS.
 
-STRUCTURAL scenes (always present, not counted as content scenes):
-  ✅ Scene01_ScrollTimeline   — 150 frames, silent, always first
-  ✅ Scene{LAST-1}_KeyTakeaway — 120 frames, always second-to-last
-  ✅ Scene{LAST}_Outro         — 362 frames, always last
+NO STRUCTURAL SCENES:
+  ❌ NO Scene01_ScrollTimeline — REMOVED
+  ❌ NO KeyTakeaway scene — REMOVED
+  ❌ NO Outro scene — REMOVED
 
-Content scenes (Scene02 → Scene{LAST-2}):
+All scenes are content scenes (Scene01 → Scene{N}):
   ✅ Exactly 1 scene per CSV phrase group
-  ❌ DO NOT add intro scenes before Scene02 with no CSV phrase
-  ❌ DO NOT add summary/recap scenes after the last CSV phrase
+  ✅ Scene01 = first CSV phrase (audio frame 0)
+  ✅ Scene{N} = last CSV phrase (ends at TOTAL_FRAMES)
+  ❌ DO NOT add any scene with no corresponding CSV phrase
   ❌ DO NOT add "bonus" scenes for sub-topics not in the CSV
-  ❌ DO NOT extend the last content scene into two scenes without a CSV split
 
 Counting rule:
-  If CSV parsing produces 14 phrase groups → write Scene02 through Scene15 (14 scenes)
-  + Scene16_KeyTakeaway + Scene17_Outro
-  Total scene files: 17 (= 1 scroll + 14 content + 1 takeaway + 1 outro)
+  If CSV parsing produces 14 phrase groups → write Scene01 through Scene14 (14 scenes)
+  Total scene files: 14 (= 14 content scenes, nothing else)
 ```
 
-### Thematic SVG illustration — MANDATORY in EVERY content scene
+### Thematic SVG illustration — MANDATORY MASSIVE in EVERY content scene
 ```
-EVERY content scene (Scene02 through Scene{LAST-2}) MUST contain:
-  ✅ At least ONE thematic SVG illustration relevant to the topic
-  ✅ The illustration must be drawn from INLINE SVG paths — not text labels alone
+EVERY content scene MUST contain:
+  ✅ ONE MASSIVE, DETAILED, REALISTIC thematic SVG illustration occupying most of Zone C
+  ✅ Minimum illustration size: 700×600px (fills the majority of screen space below headline)
+  ✅ Drawn entirely from INLINE SVG paths — detailed shapes, NOT text labels alone
   ✅ The illustration must animate in (spring entrance or path-draw)
+  ✅ Shows the SPECIFIC TOPIC being discussed — not a generic placeholder
 
-A scene with ONLY text blocks and colored rectangles is REJECTED.
-A scene with SVG boxes that contain only text labels is NOT an illustration — it is a list.
+LESS TEXT, MORE DRAWING:
+  ❌ Do NOT fill the screen with text bullets
+  ❌ Do NOT use small decorative icons (80×80px) — they are too tiny
+  ✅ Draw ONE large, detailed, topic-specific illustration that fills Zone C
+  ✅ The drawing should communicate the concept visually without any audio
 
-Illustrations are scene-specific: draw what the script is TALKING ABOUT.
-  Java/Train script → draw trains, tracks, stations, tickets, signals, switches
-  AI script        → draw neural connections, agent loops, memory banks, flow arrows
-  HiddenWorld      → draw the specific subject (space = planets/orbits, auto = cars/engines)
+Realistic level of detail required:
+  AI / Agentic AI → Draw a realistic robot body (head, torso, arms with joints, circuitry lines)
+                    Draw neural network with multiple layers and connections
+                    Draw a detailed agent loop with labeled nodes and arrows
+  Java / Railway  → Draw a full locomotive with wheels, cab, smokestack, coupling
+                    Draw a station platform with roof, pillars, tracks, schedule board
+  HiddenWorld     → Draw the specific subject at high detail (planet with ring, car engine, DNA helix)
+
+A scene with ONLY text blocks and small colored rectangles is REJECTED.
+A tiny 120px icon with big text next to it is REJECTED.
+A large 600px+ detailed SVG drawing IS CORRECT.
 ```
 
 ### Visual explanation mandate
@@ -1581,14 +1586,18 @@ Before considering a day complete, verify every file:
 **timing.ts**
 - [ ] SERIES_ACCENT set to correct hex for the series (see PART 15)
 - [ ] ACCENT_R, ACCENT_G, ACCENT_B set to match SERIES_ACCENT
-- [ ] TOTAL_FRAMES calculated correctly: 150 + audio_frames + 30 + 120 + 362
+- [ ] TOTAL_FRAMES = Math.ceil(audioSeconds * 30) — NO structural scene overhead
+- [ ] bg_primary = '#0D0D0D' (near-black)
+- [ ] bg_secondary = '#1A1A1A' (dark card background)
+- [ ] grid_line = 'rgba(255,255,255,0.06)' (barely visible, 6% opacity)
 - [ ] Every scene has both `from` and `duration`
-- [ ] No `from` values overlap for adjacent scenes (gaps allowed, overlaps not)
-- [ ] CAPTIONS array has one entry per content scene
+- [ ] No `from` values overlap for adjacent scenes
+- [ ] CAPTIONS array has one entry per content scene (all scenes are content scenes)
 - [ ] All COLORS entries present (bg_primary, bg_secondary, white, text_primary, text_muted, text_caption, text_highlight, grid_line, accent, accent_dim, accent_mid)
+- [ ] NO s_takeaway, NO s_outro in SCENE_TIMING
 
 **components.tsx**
-- [ ] `DarkBackground` renders #1D1D1C rect + white grid lines (80px cells, rgba(255,255,255,0.5))
+- [ ] `DarkBackground` renders #0D0D0D rect + grid lines (120px cells, rgba(255,255,255,0.06))
 - [ ] Caption fixed at y=1860 (BOTTOM), center anchor x=540, NO background rect
 - [ ] Caption `<text>` element has `fill={COLORS.text_caption}` (#FFFFFF — white)
 - [ ] Caption tspan key words use `fill={COLORS.text_highlight}` (series accent)
@@ -1596,7 +1605,7 @@ Before considering a day complete, verify every file:
 - [ ] `BentoCard` component exported (for scene use)
 - [ ] No gradient in any component
 
-**Scene01_ScrollTimeline.tsx**
+**Scene count verification**
 - [ ] Uses `DarkBackground` (NOT PaperBackground)
 - [ ] ALL_DAYS array contains every day from the architecture file
 - [ ] currentDay entry highlighted with `COLORS.accent`
@@ -1610,10 +1619,11 @@ Before considering a day complete, verify every file:
 
 **Scene count verification (do this BEFORE writing content scenes)**
 - [ ] Count phrase groups from CSV: N groups
-- [ ] Plan exactly N content scene files (Scene02 → Scene{N+1})
-- [ ] No extra "intro" content scene before Scene02
-- [ ] No extra "summary" content scene after Scene{N+1}
-- [ ] Only structural scenes exempt: Scene01 (scroll), Scene{N+2} (takeaway), Scene{N+3} (outro)
+- [ ] Plan exactly N content scene files (Scene01 → Scene{N})
+- [ ] No ScrollTimeline file — REMOVED
+- [ ] No KeyTakeaway file — REMOVED
+- [ ] No Outro file — REMOVED
+- [ ] Every scene file maps 1:1 to a CSV phrase group
 
 **Every content scene**
 - [ ] `<DarkBackground />` is first SVG child (NOT PaperBackground)
@@ -1642,9 +1652,12 @@ Before considering a day complete, verify every file:
 - [ ] Stagger delay between sibling elements is 10–14 frames (not all at once)
 
 **Scene.tsx**
-- [ ] Audio `<Sequence from={150}>` (not from={0})
+- [ ] Audio `<Audio src={...} startFrom={0} />` with NO Sequence wrapper (plays from frame 0)
 - [ ] All scenes have `premountFor={30}`
-- [ ] AbsoluteFill has `style={{ background: COLORS.bg_primary }}` (NOT bg_paper)
+- [ ] AbsoluteFill has `style={{ background: COLORS.bg_primary }}` (#0D0D0D)
+- [ ] NO Scene01_ScrollTimeline sequence
+- [ ] NO s_takeaway sequence
+- [ ] NO s_outro sequence
 
 **Root.tsx**
 - [ ] New composition registered with correct TOTAL_FRAMES
@@ -1755,14 +1768,14 @@ CHUNK = one of the following units:
   A) Planning output for all days (no code, just analysis + plan print)
   B) helpers/timing.ts  for one day
   C) helpers/components.tsx  for one day
-  D) Scene01_ScrollTimeline.tsx  for one day
-  E) Content scenes 02 through 06  for one day  (max 5 scenes per chunk)
-  F) Content scenes 07 through 11  for one day  (max 5 scenes per chunk)
-  G) Content scenes 12 through 16  for one day  (max 5 scenes per chunk)
-  H) Content scenes 17+ through end  for one day  (max 5 scenes per chunk)
-  I) KeyTakeaway + Outro  for one day
-  J) Scene.tsx (orchestrator)  for one day
-  K) Root.tsx update  (all days, done once at the very end)
+  D) Content scenes 01 through 05  for one day  (max 5 scenes per chunk)
+  E) Content scenes 06 through 10  for one day  (max 5 scenes per chunk)
+  F) Content scenes 11 through 15  for one day  (max 5 scenes per chunk)
+  G) Content scenes 16+ through end  for one day  (max 5 scenes per chunk)
+  H) Scene.tsx (orchestrator)  for one day
+  I) Root.tsx update  (all days, done once at the very end)
+
+NOTE: NO ScrollTimeline chunk, NO KeyTakeaway+Outro chunk — those scenes are REMOVED.
 ```
 
 **Adjust chunk boundaries based on scene count:**
@@ -1805,14 +1818,15 @@ Before starting any chunk — whether it's chunk B of day 1 or chunk E of day 5 
 ║     for the specific phrase group being generated            ║
 ║                                                               ║
 ║  5. Confirm the 7 critical rules from memory:                ║
-║     • Background = #1D1D1C dark + white grid on EVERY scene  ║
+║     • Background = #0D0D0D near-black + 120px grid (0.06)    ║
 ║     • Font = Galaxie Copernicus ExtraBold on ALL text        ║
 ║     • Accent = correct series color (PART 15 table)          ║
-║     • Audio in <Sequence from={150}> NOT from={0}            ║
+║     • Audio: <Audio startFrom={0} /> — NO Sequence wrapper   ║
 ║     • Caption at y=1860 BOTTOM, white, Galaxie Copernicus    ║
 ║     • No gradient, no emoji, no CSS animation                ║
 ║     • premountFor={30} on every <Sequence>                   ║
-║     • Every scene ≥ 300 lines, spring() on every entrance    ║
+║     • MASSIVE SVG illustrations — detailed, fills Zone C     ║
+║     • NO ScrollTimeline, NO KeyTakeaway, NO Outro            ║
 ║                                                               ║
 ╚════════════════════════════════════════════════════════════════╝
 ```

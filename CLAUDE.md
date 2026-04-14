@@ -35,9 +35,13 @@ Every file is chunk-based (PART 18). Every chunk starts with a full instruction 
 |---|---|
 | Framework | Remotion 4.0 + React 19 + TypeScript |
 | Canvas | 1080 × 1920 px portrait, 30 fps |
-| Background | `#1D1D1C` dark (Claude-style) + white grid — EVERY scene |
-| Font | **`'Galaxie Copernicus ExtraBold', Georgia, serif`** — EVERY text element, EVERY scene |
-| Audio | Must be in `public/` for `staticFile()` |
+| Background | `#0D0D0D` near-black + subtle grid (120px cells, `rgba(255,255,255,0.06)`) — EVERY scene |
+| Card bg | `#1A1A1A` for bento tiles |
+| Font | **`'Galaxie Copernicus ExtraBold', Georgia, serif`** — EVERY text element; `font-style="italic"` for key terms |
+| Audio | Must be in `public/` for `staticFile()`; plays from frame **0** — no silent intro |
+| Structural scenes | **NONE** — no ScrollTimeline, no KeyTakeaway, no Outro |
+| Total frames | `Math.ceil(audioSeconds * 30)` — equals audio duration exactly |
+| Illustrations | **MANDATORY MASSIVE SVG** — detailed robots/agents (AI), trains (Java), fills Zone C |
 | Package manager | npm |
 
 ### SERIES AUTO-DETECTION — accent color is set automatically by series name
@@ -84,35 +88,39 @@ import { AbsoluteFill, Audio, Sequence, staticFile } from 'remotion';
 import { Audio } from '@remotion/media';
 ```
 
-### FIX 3 — Audio Sequence delay (audio starts at frame 150, NOT frame 0)
+### FIX 3 — Audio plays from frame 0 (NO Sequence wrapper, NO delay)
 
 ```tsx
-// ✅ CORRECT — audio delayed by 150 frames (Scene01 scroll runs silently first)
+// ✅ CORRECT — audio starts at frame 0, no wrapper
+<Audio src={staticFile('audio/ai{N}.wav')} startFrom={0} />
+
+// ❌ WRONG (OLD PATTERN) — audio delayed with Sequence wrapper
 <Sequence from={150} durationInFrames={AUDIO_FRAMES}>
   <Audio src={staticFile('audio/ai{N}.wav')} startFrom={0} />
 </Sequence>
-
-// ❌ WRONG — audio starting at composition frame 0
-<Audio src={staticFile('audio/ai{N}.wav')} startFrom={0} />
-// (global Audio with no Sequence wrapper plays during the silent scroll)
+// The ScrollTimeline that needed that delay has been REMOVED.
+// Audio now plays from the very first frame.
 ```
 
-### FIX 4 — Frame calculation formula (unambiguous)
+### FIX 4 — Frame calculation formula (unambiguous) — NEW SIMPLE VERSION
 
 ```typescript
 // Given: audioSeconds = last row's "End Time (s)" from CSV
-const SCROLL_FRAMES  = 150;
-const AUDIO_FRAMES   = Math.ceil(audioSeconds * 30);
-const AUDIO_END      = SCROLL_FRAMES + AUDIO_FRAMES;
-const TAKEAWAY_FROM  = AUDIO_END + 30;           // 1s gap after audio ends
-const TAKEAWAY_DUR   = 120;
-const OUTRO_FROM     = TAKEAWAY_FROM + TAKEAWAY_DUR;
-const OUTRO_DUR      = 362;
-const TOTAL_FRAMES   = OUTRO_FROM + OUTRO_DUR;
+// SIMPLE: no structural scenes, video = audio duration only
+const TOTAL_FRAMES = Math.ceil(audioSeconds * 30);
 
-// Content scene from values:
-// scene_from = 150 + Math.round(csv_start_seconds * 30)
-// scene_duration = Math.max(60, Math.round((csv_end - csv_start) * 30) + 18)
+// Scene from values (audio starts at frame 0):
+// scene_from = Math.round(csv_start_seconds * 30)
+// scene_duration = next_scene_from - current_scene_from  (for most scenes)
+// last_scene_duration = TOTAL_FRAMES - last_scene_from
+
+// ❌ OLD FORMULA (FORBIDDEN):
+// const SCROLL_FRAMES = 150;
+// const AUDIO_END = SCROLL_FRAMES + AUDIO_FRAMES;
+// const TAKEAWAY_FROM = AUDIO_END + 30;
+// const OUTRO_DUR = 362;
+// const TOTAL_FRAMES = OUTRO_FROM + OUTRO_DUR;
+// scene_from = 150 + Math.round(csv_start_seconds * 30);  ← OLD, FORBIDDEN
 ```
 
 ### FIX 5 — premountFor on every Sequence
@@ -231,15 +239,20 @@ Any dark caption text becomes **invisible**. This is the most common subtitle vi
 Always use the `Caption` component from `helpers/components.tsx`. Never write raw caption
 SVG text inside a scene file — the component enforces the correct colors automatically.
 
-### FIX 12 — Every scene must contain a thematic SVG illustration
+### FIX 12 — Every scene must contain a MASSIVE thematic SVG illustration
 
 Scenes with only text blocks and colored rectangles are **rejected**. Every content scene
-must draw at least ONE topic-relevant illustration using inline SVG primitives.
+must draw at least ONE **large, detailed, realistic** topic-relevant illustration occupying
+most of Zone C (minimum 700×600px).
 
 ```
-Java/Train series → draw trains, tracks, stations, tickets, signals, switches
-AI series        → draw agent nodes, neural connections, memory banks, loop arrows
-HiddenWorld      → draw the specific subject (planets, cars, cells, circuits, etc.)
+LESS TEXT, MORE DRAWING — maximize illustration area, minimize text blocks
+
+AI series        → Draw detailed ROBOTS (head+torso+arms+circuitry), neural networks,
+                   agent loops with labeled nodes, tool-calling flow diagrams
+Java/Train series → Draw full locomotives (wheels+cab+smokestack+tracks), station platforms
+                   with roof+pillars+rails, class hierarchy trees with full UML boxes
+HiddenWorld      → Draw the specific subject at high detail
 ```
 
 See PART 14B of `.github/copilot-instructions.md` for the full vocabulary with SVG shapes.
@@ -269,19 +282,19 @@ const FONT = "'Galaxie Copernicus ExtraBold', Georgia, serif";
 <text fontFamily="'Inter', sans-serif" fill={COLORS.deep_black}>CENTRAL STATION</text>
 ```
 
-### FIX 13 — Scene count must exactly match CSV phrase groups
+### FIX 13 — Scene count must exactly match CSV phrase groups (NO structural scenes)
 
-Do NOT add content scenes that have no corresponding CSV phrase. The only "structural"
-scenes allowed without a CSV phrase are: Scene01_ScrollTimeline, Scene{LAST-1}_KeyTakeaway,
-and Scene{LAST}_Outro.
+Do NOT add any scenes without a corresponding CSV phrase.
+NO ScrollTimeline. NO KeyTakeaway. NO Outro. ALL scenes are content scenes.
 
 ```
-CSV produces 14 phrase groups → generate exactly 14 content scenes (Scene02–Scene15)
-Total files: Scene01 + Scene02…Scene15 + Scene16_KeyTakeaway + Scene17_Outro = 17 files
+CSV produces 14 phrase groups → generate exactly 14 content scenes (Scene01–Scene14)
+Total files: 14 scene files only (no scroll, no takeaway, no outro)
 
-❌ Do NOT add a "SceneIntro" or "SceneOverview" before Scene02
-❌ Do NOT add a "SceneSummary" or extra recap after Scene15
-❌ Do NOT split one CSV phrase into two scenes to inflate scene count
+❌ Do NOT generate Scene01_ScrollTimeline.tsx
+❌ Do NOT generate any KeyTakeaway scene
+❌ Do NOT generate any Outro scene
+❌ Do NOT add any scene without a CSV phrase
 ```
 
 ### FIX 14 — Rebuild the app after every video generation
@@ -351,12 +364,14 @@ src/Day{N}/
 │   ├── timing.ts                 (SCENE_TIMING, COLORS with series accent, CAPTIONS, helpers)
 │   └── components.tsx            (DarkBackground+grid, Caption@bottom, BentoCard, GlobalDefs, etc.)
 └── frames/
-    ├── Scene01_ScrollTimeline.tsx (150 frames, SILENT, dark theme, series accent)
-    ├── Scene02_{Name}.tsx         (first audio scene, frame 150+, bento design)
-    ├── Scene03_{Name}.tsx
+    ├── Scene01_{Name}.tsx        (first CSV phrase, audio frame 0)
+    ├── Scene02_{Name}.tsx
     ├── ...
-    ├── Scene{N-1}_KeyTakeaway.tsx (120 frames)
-    └── Scene{N}_Outro.tsx         (362 frames, next day preview)
+    └── Scene{N}_{Name}.tsx       (last CSV phrase, ends at TOTAL_FRAMES)
+
+NO Scene01_ScrollTimeline.tsx — REMOVED
+NO KeyTakeaway scene — REMOVED
+NO Outro scene — REMOVED
 
 public/audio/
     ai{N}.wav       (AI series — must be here for staticFile to work)
@@ -366,7 +381,7 @@ public/audio/
 
 ---
 
-## COLOR PALETTE (use ONLY these — dark Claude-style theme)
+## COLOR PALETTE (use ONLY these — near-black dark theme)
 
 ```typescript
 // ── Series accent map — look up by series name ─────────────────────────────────
@@ -375,16 +390,15 @@ public/audio/
 // System Design           : '#948979'  (warm stone)
 // DSA                     : '#93B1A6'  (sage green)
 // Mystery / HiddenWorld   : '#F7374F'  (vibrant red)
-// Replace ACCENT_COLOR below with the correct value for the series being generated.
 
 const SERIES_ACCENT = '#76ABAE'; // ← REPLACE with correct series accent
-const ACCENT_DIM    = 'rgba(118,171,174,0.12)'; // ← update alpha channel value if accent changes
+const ACCENT_R = 118, ACCENT_G = 171, ACCENT_B = 174; // ← REPLACE RGB to match
 
 export const COLORS = {
-  // Backgrounds
-  bg_primary:     '#1D1D1C',              // THE ONLY background — EVERY scene, zero exceptions
-  bg_secondary:   '#2C2C2B',              // bento card / tile background
-  bg_card:        '#2C2C2B',              // alias for bg_secondary
+  // Backgrounds — near-black (MUCH darker than before)
+  bg_primary:     '#0D0D0D',              // THE ONLY background — EVERY scene, zero exceptions
+  bg_secondary:   '#1A1A1A',              // bento card / tile background
+  bg_card:        '#1A1A1A',              // alias for bg_secondary
 
   // Text (light on dark)
   white:          '#FFFFFF',              // primary text on dark background
@@ -393,22 +407,22 @@ export const COLORS = {
   text_caption:   '#FFFFFF',              // subtitle text at BOTTOM
   text_highlight: SERIES_ACCENT,          // key word highlight in captions
 
-  // Grid lines
-  grid_line:      'rgba(255,255,255,0.5)', // grid on dark background (50% white)
+  // Grid — 120px cells, barely visible (0.06 opacity)
+  grid_line:      'rgba(255,255,255,0.06)', // grid on dark background (very subtle)
 
   // Series accent
-  accent:         SERIES_ACCENT,          // primary accent color (series-specific)
-  accent_dim:     ACCENT_DIM,             // accent at ~12% opacity for card fills
-  accent_mid:     'rgba(118,171,174,0.30)', // accent at 30% for borders/dividers
+  accent:         SERIES_ACCENT,
+  accent_dim:     `rgba(${ACCENT_R},${ACCENT_G},${ACCENT_B},0.12)`,
+  accent_mid:     `rgba(${ACCENT_R},${ACCENT_G},${ACCENT_B},0.30)`,
 
-  // Semantic aliases (for backwards compat with old code)
-  deep_black:     '#1D1D1C',              // maps to bg_primary
+  // Semantic aliases
+  deep_black:     '#0D0D0D',              // maps to bg_primary
   cool_silver:    'rgba(255,255,255,0.55)', // maps to text_muted
   vibrant_red:    '#F7374F',              // error/danger (also Mystery series accent)
 } as const;
 ```
 
-**CRITICAL: When generating for a specific series, update `SERIES_ACCENT` and `ACCENT_DIM`
+**CRITICAL: When generating for a specific series, update `SERIES_ACCENT` and `ACCENT_R/G/B`
 in `timing.ts` to match the series accent from the table above.**
 
 ---
@@ -457,14 +471,16 @@ Content zone:  y=60–1740 (above caption strip, below top edge)
 | No CSS transitions/animations | ABSOLUTE |
 | No overlapping elements | ABSOLUTE |
 | SVG icons only (no emoji icons) | ABSOLUTE |
-| **Every content scene has ≥ 1 thematic SVG illustration** | ABSOLUTE |
-| **Illustrations must match series topic (train/AI/etc.)** | ABSOLUTE |
-| Audio in Sequence from={150} | ABSOLUTE |
+| **MASSIVE SVG illustration in every scene (700×600px+ filling Zone C)** | ABSOLUTE |
+| **Less text, more drawing — minimize text blocks, maximize illustration** | ABSOLUTE |
+| **Illustrations: detailed robots/agents (AI), detailed trains (Java)** | ABSOLUTE |
+| Audio: `<Audio startFrom={0} />` — NO Sequence wrapper, plays from frame 0 | ABSOLUTE |
 | premountFor={30} on all Sequences | ABSOLUTE |
 | Colors only from COLORS object | ABSOLUTE |
-| **Scene count = CSV phrase groups exactly (no extras)** | ABSOLUTE |
+| **Scene count = CSV phrase groups exactly (no structural scenes)** | ABSOLUTE |
+| **No ScrollTimeline, no KeyTakeaway, no Outro** | ABSOLUTE |
 | **Run `npm run build` after every day — 0 errors required** | ABSOLUTE |
-| **No pencil-art or paper-texture style — dark Claude-style only** | ABSOLUTE |
+| **No pencil-art or paper-texture style — dark near-black only** | ABSOLUTE |
 
 ---
 
@@ -489,12 +505,9 @@ Usable width: 960px
 
 Zone A:  y=60–200   (section label / series badge)
 Zone B:  y=220–500  (main headline — H1, large text)
-Zone C:  y=520–1740 (visual content — diagrams, bento cards, illustrations)
-
-Scene01 day counter:
-  "DAY N / TOTAL" badge at x=60, y=100 (top-left)
-  Progress bar:   x=60, y=120, animated left→right
-  Totals:         AI=120, Java=105, HiddenWorld/Mystery=100, SysDesign=120, DSA=120
+Zone C:  y=520–1740 (visual content — MASSIVE SVG illustrations fill this zone)
+         → Minimum illustration: 700×600px, positioned in Zone C
+         → Keep text in Zone A/B (labels/headlines), fill Zone C with SVG drawing
 ```
 
 ---
@@ -517,21 +530,22 @@ Scene01 day counter:
 - [ ] Re-read `.github/copilot-instructions.md` (full file, not memory)
 - [ ] Re-read `src/Instructions/remotion-best-practices.md`
 - [ ] Re-read CSV phrases for the current chunk's scenes
-- [ ] Confirm: Audio in `<Sequence from={150}>`, never `from={0}`
+- [ ] Confirm: Audio `<Audio startFrom={0} />` with NO Sequence wrapper (plays from frame 0)
+- [ ] Confirm: NO ScrollTimeline scene, NO KeyTakeaway, NO Outro
 - [ ] Confirm: `DarkBackground` is FIRST SVG child in every scene (NOT PaperBackground)
-- [ ] Confirm: Background is `#1D1D1C` (NOT `#F5F0E8` paper — that is OLD/FORBIDDEN)
-- [ ] Confirm: White grid lines rendered inside DarkBackground component
+- [ ] Confirm: Background is `#0D0D0D` (near-black — NOT `#1D1D1C`, NOT `#F5F0E8` paper)
+- [ ] Confirm: Grid is 120px cells, rgba(255,255,255,0.06) — barely visible
 - [ ] Confirm: Caption at `y=1860` BOTTOM (NOT top, NOT y=140)
 - [ ] Confirm: Caption font = `'Galaxie Copernicus ExtraBold', Georgia, serif`
 - [ ] Confirm: Caption text fill = `#FFFFFF` (white — NOT dark, NOT missing)
 - [ ] Confirm: ALL text uses `'Galaxie Copernicus ExtraBold', Georgia, serif`
 - [ ] Confirm: Accent color = correct series color from SERIES AUTO-DETECTION table
-- [ ] Confirm: Card backgrounds use `COLORS.bg_secondary` (#2C2C2B) — bento style
-- [ ] Confirm: Every content scene has a thematic SVG illustration (see PART 14B)
-- [ ] Confirm: Scene count matches CSV phrase groups exactly
+- [ ] Confirm: Card backgrounds use `COLORS.bg_secondary` (#1A1A1A) — bento style
+- [ ] Confirm: Every scene has a MASSIVE SVG illustration (700×600px+ in Zone C)
+- [ ] Confirm: Illustration is detailed and topic-specific (not generic placeholder)
+- [ ] Confirm: Scene count = CSV phrase groups exactly (no structural scenes)
 - [ ] Confirm: No gradient, no emoji, no CSS animation anywhere
 - [ ] Confirm: No 3D — all animation is 2D SVG + spring() only
-- [ ] Confirm: Scene01 shows "DAY N / TOTAL" badge with progress bar
 - [ ] Confirm: No pencil style / no paper texture style
 - [ ] After CHUNK J: run `npm run build` and fix all errors before ✅
 
