@@ -1,36 +1,35 @@
-/**
- * Day 27 — "What Is a Tool?"
+﻿/**
+ * Day 27 â€” "What Is a Tool?"
  * Series: Agentic AI
- * Total: 3040 frames @ 30fps = ~101.3s
+ * Total: 2371 frames @ 30fps = ~79.0s (= audio duration exactly)
  * Audio: public/audio/ai27.wav (79.020s)
  *
+ * NO structural scenes â€” video length = script/audio length only
+ * Audio plays from frame 0 â€” no delay, no silent intro
+ *
  * SCENE SEQUENCE:
- * Scene01  frames    0–149    ScrollTimeline (SILENT)
- * Scene02  frames  150–309    Day intro
- * Scene03  frames  310–416    Observation recap
- * Scene04  frames  417–568    Tool definition
- * Scene05  frames  573–733    Tool examples
- * Scene06  frames  738–942    Bounded capability
- * Scene07  frames  943–1081   Model doesn't execute
- * Scene08  frames 1082–1332   Tool call structure
- * Scene09  frames 1333–1403   Runtime reads output
- * Scene10  frames 1404–1564   Function execution
- * Scene11  frames 1565–1659   Model decides
- * Scene12  frames 1660–1738   Separation matters
- * Scene13  frames 1739–1973   Model reasoning
- * Scene14  frames 1974–2154   Tool execution
- * Scene15  frames 2155–2261   Search tool
- * Scene16  frames 2262–2353   Code tool
- * Scene17  frames 2354–2477   Browser tool
- * Scene18  frames 2478–2557   Agent's hands
- * Scene19  frames 2558–2677   Key Takeaway
- * Scene20  frames 2678–3039   Outro
+ * Scene02  frames    0â€“159    Day intro
+ * Scene03  frames  160â€“265    Observation recap
+ * Scene04  frames  266â€“422    Tool definition
+ * Scene05  frames  423â€“587    Tool examples
+ * Scene06  frames  588â€“774    Bounded capability
+ * Scene07  frames  775â€“909    Model doesn't execute
+ * Scene08  frames  910â€“1163   Tool call structure
+ * Scene09  frames 1164â€“1231   Runtime reads output
+ * Scene10  frames 1232â€“1395   Function execution
+ * Scene11  frames 1396â€“1503   Model decides
+ * Scene12  frames 1504â€“1564   Separation matters
+ * Scene13  frames 1565â€“1798   Model reasoning
+ * Scene14  frames 1799â€“1981   Tool execution
+ * Scene15  frames 1982â€“2086   Search tool
+ * Scene16  frames 2087â€“2179   Code tool
+ * Scene17  frames 2180â€“2308   Browser tool
+ * Scene18  frames 2309â€“2370   Agent's hands
  */
 import React from 'react';
 import { AbsoluteFill, Audio, Sequence, staticFile } from 'remotion';
 import { SCENE_TIMING, COLORS } from './helpers/timing';
 
-import { Scene01_ScrollTimeline } from './frames/Scene01_ScrollTimeline';
 import { Scene02_DayIntro } from './frames/Scene02_DayIntro';
 import { Scene03_ObservationRecap } from './frames/Scene03_ObservationRecap';
 import { Scene04_ToolDefinition } from './frames/Scene04_ToolDefinition';
@@ -48,32 +47,15 @@ import { Scene15_SearchTool } from './frames/Scene15_SearchTool';
 import { Scene16_CodeTool } from './frames/Scene16_CodeTool';
 import { Scene17_BrowserTool } from './frames/Scene17_BrowserTool';
 import { Scene18_AgentHands } from './frames/Scene18_AgentHands';
-import { Scene19_KeyTakeaway } from './frames/Scene19_KeyTakeaway';
-import { Scene20_Outro } from './frames/Scene20_Outro';
 
 export const AiDay27Scene: React.FC = () => {
   return (
     <AbsoluteFill style={{ background: COLORS.bg_primary }}>
 
-      {/* Audio starts at composition frame 150 (after silent scroll) */}
-      <Sequence from={150} durationInFrames={2371}>
-        <Audio src={staticFile('audio/ai27.wav')} startFrom={0} />
-      </Sequence>
+      {/* Audio plays from frame 0 â€” no Sequence wrapper, no delay */}
+      <Audio src={staticFile('audio/ai27.wav')} startFrom={0} />
 
-      {/* Scene 01 — Scrolling Day Timeline (SILENT) */}
-      <Sequence
-        from={SCENE_TIMING.s01.from}
-        durationInFrames={SCENE_TIMING.s01.duration}
-        premountFor={30}
-      >
-        <Scene01_ScrollTimeline
-          currentDay={27}
-          totalDays={120}
-          seriesTitle="AGENTIC AI · FIRST PRINCIPLES"
-        />
-      </Sequence>
-
-      {/* Scene 02 — Day intro */}
+      {/* Scene 02 â€” Day intro */}
       <Sequence
         from={SCENE_TIMING.s02.from}
         durationInFrames={SCENE_TIMING.s02.duration}
@@ -82,7 +64,7 @@ export const AiDay27Scene: React.FC = () => {
         <Scene02_DayIntro />
       </Sequence>
 
-      {/* Scene 03 — Observation recap */}
+      {/* Scene 03 â€” Observation recap */}
       <Sequence
         from={SCENE_TIMING.s03.from}
         durationInFrames={SCENE_TIMING.s03.duration}
@@ -91,7 +73,7 @@ export const AiDay27Scene: React.FC = () => {
         <Scene03_ObservationRecap />
       </Sequence>
 
-      {/* Scene 04 — Tool definition */}
+      {/* Scene 04 â€” Tool definition */}
       <Sequence
         from={SCENE_TIMING.s04.from}
         durationInFrames={SCENE_TIMING.s04.duration}
@@ -100,7 +82,7 @@ export const AiDay27Scene: React.FC = () => {
         <Scene04_ToolDefinition />
       </Sequence>
 
-      {/* Scene 05 — Tool examples */}
+      {/* Scene 05 â€” Tool examples */}
       <Sequence
         from={SCENE_TIMING.s05.from}
         durationInFrames={SCENE_TIMING.s05.duration}
@@ -109,7 +91,7 @@ export const AiDay27Scene: React.FC = () => {
         <Scene05_ToolExamples />
       </Sequence>
 
-      {/* Scene 06 — Bounded capability */}
+      {/* Scene 06 â€” Bounded capability */}
       <Sequence
         from={SCENE_TIMING.s06.from}
         durationInFrames={SCENE_TIMING.s06.duration}
@@ -118,7 +100,7 @@ export const AiDay27Scene: React.FC = () => {
         <Scene06_BoundedCapability />
       </Sequence>
 
-      {/* Scene 07 — Model doesn't execute */}
+      {/* Scene 07 â€” Model doesn't execute */}
       <Sequence
         from={SCENE_TIMING.s07.from}
         durationInFrames={SCENE_TIMING.s07.duration}
@@ -127,7 +109,7 @@ export const AiDay27Scene: React.FC = () => {
         <Scene07_ModelDoesntExecute />
       </Sequence>
 
-      {/* Scene 08 — Tool call structure */}
+      {/* Scene 08 â€” Tool call structure */}
       <Sequence
         from={SCENE_TIMING.s08.from}
         durationInFrames={SCENE_TIMING.s08.duration}
@@ -136,7 +118,7 @@ export const AiDay27Scene: React.FC = () => {
         <Scene08_ToolCallStructure />
       </Sequence>
 
-      {/* Scene 09 — Runtime reads output */}
+      {/* Scene 09 â€” Runtime reads output */}
       <Sequence
         from={SCENE_TIMING.s09.from}
         durationInFrames={SCENE_TIMING.s09.duration}
@@ -145,7 +127,7 @@ export const AiDay27Scene: React.FC = () => {
         <Scene09_RuntimeReadsOutput />
       </Sequence>
 
-      {/* Scene 10 — Function execution */}
+      {/* Scene 10 â€” Function execution */}
       <Sequence
         from={SCENE_TIMING.s10.from}
         durationInFrames={SCENE_TIMING.s10.duration}
@@ -154,7 +136,7 @@ export const AiDay27Scene: React.FC = () => {
         <Scene10_FunctionExecution />
       </Sequence>
 
-      {/* Scene 11 — Model decides */}
+      {/* Scene 11 â€” Model decides */}
       <Sequence
         from={SCENE_TIMING.s11.from}
         durationInFrames={SCENE_TIMING.s11.duration}
@@ -163,7 +145,7 @@ export const AiDay27Scene: React.FC = () => {
         <Scene11_ModelDecides />
       </Sequence>
 
-      {/* Scene 12 — Separation matters */}
+      {/* Scene 12 â€” Separation matters */}
       <Sequence
         from={SCENE_TIMING.s12.from}
         durationInFrames={SCENE_TIMING.s12.duration}
@@ -172,7 +154,7 @@ export const AiDay27Scene: React.FC = () => {
         <Scene12_SeparationMatters />
       </Sequence>
 
-      {/* Scene 13 — Model reasoning */}
+      {/* Scene 13 â€” Model reasoning */}
       <Sequence
         from={SCENE_TIMING.s13.from}
         durationInFrames={SCENE_TIMING.s13.duration}
@@ -181,7 +163,7 @@ export const AiDay27Scene: React.FC = () => {
         <Scene13_ModelReasoning />
       </Sequence>
 
-      {/* Scene 14 — Tool execution */}
+      {/* Scene 14 â€” Tool execution */}
       <Sequence
         from={SCENE_TIMING.s14.from}
         durationInFrames={SCENE_TIMING.s14.duration}
@@ -190,7 +172,7 @@ export const AiDay27Scene: React.FC = () => {
         <Scene14_ToolExecution />
       </Sequence>
 
-      {/* Scene 15 — Search tool */}
+      {/* Scene 15 â€” Search tool */}
       <Sequence
         from={SCENE_TIMING.s15.from}
         durationInFrames={SCENE_TIMING.s15.duration}
@@ -199,7 +181,7 @@ export const AiDay27Scene: React.FC = () => {
         <Scene15_SearchTool />
       </Sequence>
 
-      {/* Scene 16 — Code tool */}
+      {/* Scene 16 â€” Code tool */}
       <Sequence
         from={SCENE_TIMING.s16.from}
         durationInFrames={SCENE_TIMING.s16.duration}
@@ -208,7 +190,7 @@ export const AiDay27Scene: React.FC = () => {
         <Scene16_CodeTool />
       </Sequence>
 
-      {/* Scene 17 — Browser tool */}
+      {/* Scene 17 â€” Browser tool */}
       <Sequence
         from={SCENE_TIMING.s17.from}
         durationInFrames={SCENE_TIMING.s17.duration}
@@ -217,36 +199,13 @@ export const AiDay27Scene: React.FC = () => {
         <Scene17_BrowserTool />
       </Sequence>
 
-      {/* Scene 18 — Agent's hands */}
+      {/* Scene 18 â€” Agent's hands */}
       <Sequence
         from={SCENE_TIMING.s18.from}
         durationInFrames={SCENE_TIMING.s18.duration}
         premountFor={30}
       >
         <Scene18_AgentHands />
-      </Sequence>
-
-      {/* Scene 19 — Key Takeaway */}
-      <Sequence
-        from={SCENE_TIMING.s_takeaway.from}
-        durationInFrames={SCENE_TIMING.s_takeaway.duration}
-        premountFor={30}
-      >
-        <Scene19_KeyTakeaway />
-      </Sequence>
-
-      {/* Scene 20 — Outro */}
-      <Sequence
-        from={SCENE_TIMING.s_outro.from}
-        durationInFrames={SCENE_TIMING.s_outro.duration}
-        premountFor={30}
-      >
-        <Scene20_Outro
-          currentDay={27}
-          nextDay={28}
-          nextTopic="What Is Tool Calling?"
-          seriesTitle="AGENTIC AI · FIRST PRINCIPLES"
-        />
       </Sequence>
 
     </AbsoluteFill>

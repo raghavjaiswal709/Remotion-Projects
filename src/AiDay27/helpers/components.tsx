@@ -12,20 +12,20 @@ const FONT = "'Galaxie Copernicus ExtraBold', Georgia, serif";
 export const DarkBackground: React.FC = () => (
   <g>
     <rect width={1080} height={1920} fill={COLORS.bg_primary} />
-    {Array.from({ length: Math.ceil(1920 / 80) + 1 }, (_, i) => (
+    {Array.from({ length: Math.ceil(1920 / 120) + 1 }, (_, i) => (
       <line
         key={`h${i}`}
-        x1={0} y1={i * 80}
-        x2={1080} y2={i * 80}
+        x1={0} y1={i * 120}
+        x2={1080} y2={i * 120}
         stroke={COLORS.grid_line}
         strokeWidth={1}
       />
     ))}
-    {Array.from({ length: Math.ceil(1080 / 80) + 1 }, (_, i) => (
+    {Array.from({ length: Math.ceil(1080 / 120) + 1 }, (_, i) => (
       <line
         key={`v${i}`}
-        x1={i * 80} y1={0}
-        x2={i * 80} y2={1920}
+        x1={i * 120} y1={0}
+        x2={i * 120} y2={1920}
         stroke={COLORS.grid_line}
         strokeWidth={1}
       />
