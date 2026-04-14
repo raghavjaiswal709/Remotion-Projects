@@ -34,12 +34,23 @@ All ambiguity is resolved using the AMBIGUITY TABLE in PART 17.
 |---|---|
 | Canvas | 1080 × 1920 px portrait |
 | FPS | 30 |
-| Background | `#F5F0E8` warm paper — **every single scene, zero exceptions** |
+| Background | `#1D1D1C` dark (Claude-style) + white grid — **every single scene, zero exceptions** |
+| Font | **`'Galaxie Copernicus ExtraBold', Georgia, serif`** — every text element, every scene |
 | Audio file location | Must be in `public/audio/` for `staticFile()` to work |
 | Audio start (composition frame) | Frame **150** — after the silent scroll animation |
 | Scene 01 always | `Scene01_ScrollTimeline` — 150 frames, **SILENT**, no audio |
 | Last scene always | `Scene{LAST}_Outro` — 362 frames, shows next day topic |
-| Captions | **SVG `<text>`**, `y=140 (TOP)`, center anchor, **no background rect** |
+| Captions | **SVG `<text>`**, `y=1860 (BOTTOM)`, center anchor, **white fill, Galaxie Copernicus ExtraBold** |
+
+### Series auto-detection — accent color is set automatically by series name
+
+| Series | Accent Color | Accent RGB | Scroll Title |
+|---|---|---|---|
+| Java / National Railway | `#D87656` | `rgba(216,118,86,…)` | `"NATIONAL RAILWAY · JAVA"` |
+| Agentic AI | `#76ABAE` | `rgba(118,171,174,…)` | `"AGENTIC AI · FIRST PRINCIPLES"` |
+| System Design | `#948979` | `rgba(148,137,121,…)` | `"SYSTEM DESIGN · FOUNDATIONS"` |
+| DSA | `#93B1A6` | `rgba(147,177,166,…)` | `"DATA STRUCTURES & ALGORITHMS"` |
+| Mystery / HiddenWorld | `#F7374F` | `rgba(247,55,79,…)` | `"MYSTERY RESOLVED · DAILY FACTS"` |
 
 ### Critical Remotion Rules (read before writing any code)
 
@@ -61,14 +72,17 @@ All ambiguity is resolved using the AMBIGUITY TABLE in PART 17.
 
 ### Before writing a single file, run these checks:
 
-**Step A — Identify series and read architecture:**
+**Step A — Identify series, read architecture, and set accent color:**
 ```
-AI series       → src/Instructions/architecture_AI.md
-Java series     → src/Instructions/architecture_java.md
-HiddenWorld     → src/Instructions/architecture.md
+Agentic AI series    → src/Instructions/architecture_AI.md    | SERIES_ACCENT = '#76ABAE'
+Java series          → src/Instructions/architecture_java.md  | SERIES_ACCENT = '#D87656'
+System Design series → src/Instructions/architecture_SD.md    | SERIES_ACCENT = '#948979'
+DSA series           → src/Instructions/architecture_DSA.md   | SERIES_ACCENT = '#93B1A6'
+HiddenWorld/Mystery  → src/Instructions/architecture.md       | SERIES_ACCENT = '#F7374F'
 ```
 Read Day N entry for: topic, module context.
 Read Day N+1 entry for: next day topic (needed in Outro).
+Set SERIES_ACCENT and ACCENT_R/G/B in timing.ts before writing any code.
 
 **Step B — Find and stage the audio file:**
 ```
@@ -169,20 +183,37 @@ import { Easing } from 'remotion';
 
 export const FPS = 30;
 
+// ── Series accent — SET BASED ON SERIES (see PART 15 for full table) ─────────
+// Java: '#D87656' | AI: '#76ABAE' | SysDesign: '#948979' | DSA: '#93B1A6' | Mystery: '#F7374F'
+const SERIES_ACCENT = '#76ABAE';                      // ← REPLACE with correct series accent
+const ACCENT_R = 118, ACCENT_G = 171, ACCENT_B = 174; // ← REPLACE RGB values to match accent
+
 // ── Color palette ── use ONLY these, never raw hex codes outside this object ──
 export const COLORS = {
-  bg_paper:       '#F5F0E8',   // warm off-white — THE ONLY background color
-  deep_black:     '#1A1A1A',   // body text, outlines, structural
-  sky_blue:       '#2563EB',   // primary accent: headlines, key labels, active state
-  green:          '#16A34A',   // success, positive, secondary accent
-  orange:         '#EA580C',   // energy, speed, heat, warnings
-  brown:          '#92400E',   // earth, structural warmth
-  amber:          '#D97706',   // engineering, technical highlight
-  cool_silver:    '#94A3B8',   // secondary text, passive labels
-  vibrant_red:    '#DC2626',   // errors only — use sparingly
-  purple:         '#7C3AED',   // AI/neural/digital concepts
-  text_caption:   '#1A1A1A',   // ALL caption normal words
-  text_highlight: '#2563EB',   // caption key-word highlight
+  // Backgrounds
+  bg_primary:     '#1D1D1C',   // THE ONLY background — EVERY scene, zero exceptions
+  bg_secondary:   '#2C2C2B',   // bento card / tile background
+  bg_card:        '#2C2C2B',   // alias for bg_secondary
+
+  // Text (light on dark)
+  white:          '#FFFFFF',   // primary text on dark background
+  text_primary:   '#FFFFFF',   // body/heading text
+  text_muted:     'rgba(255,255,255,0.55)', // secondary/muted labels
+  text_caption:   '#FFFFFF',   // subtitle at BOTTOM (white on dark)
+  text_highlight: SERIES_ACCENT,            // key-word highlight in captions
+
+  // Grid
+  grid_line:      'rgba(255,255,255,0.5)',  // grid on dark bg (50% white)
+
+  // Series accent
+  accent:         SERIES_ACCENT,            // primary accent (series-specific)
+  accent_dim:     `rgba(${ACCENT_R},${ACCENT_G},${ACCENT_B},0.12)`, // 12% fill
+  accent_mid:     `rgba(${ACCENT_R},${ACCENT_G},${ACCENT_B},0.30)`, // 30% border
+
+  // Semantic aliases (for backwards compat references)
+  deep_black:     '#1D1D1C',   // maps to bg_primary
+  cool_silver:    'rgba(255,255,255,0.55)', // maps to text_muted
+  vibrant_red:    '#F7374F',   // error/danger
 } as const;
 
 // ── Frame constants ──────────────────────────────────────────────────────────
@@ -260,44 +291,60 @@ export const lerp = (a: number, b: number, t: number): number =>
 ```tsx
 /**
  * Shared components for Day {N}
- * RULE: PaperBackground must be the first child of AbsoluteFill in EVERY scene.
+ * RULE: DarkBackground must be the first child of every SVG in EVERY scene.
+ * FONT: 'Galaxie Copernicus ExtraBold', Georgia, serif — used on ALL text elements.
  */
 import React from 'react';
 import { useCurrentFrame } from 'remotion';
 import { COLORS } from './timing';
 
-// ── Paper background — USE IN EVERY SINGLE SCENE ─────────────────────────────
-// Always the FIRST element inside AbsoluteFill
-export const PaperBackground: React.FC = () => (
+const FONT = "'Galaxie Copernicus ExtraBold', Georgia, serif";
+
+// ── Dark background with grid — USE IN EVERY SINGLE SCENE ─────────────────────
+// Always the FIRST element inside <svg>
+// Grid: 80px cells, white lines at 50% opacity
+export const DarkBackground: React.FC = () => (
   <g>
-    {/* Warm paper base */}
-    <rect width={1080} height={1920} fill={COLORS.bg_paper} />
-    {/* Paper grain — subtle dot grid */}
-    {Array.from({ length: 12 * 22 }, (_, i) => (
-      <circle
-        key={i}
-        cx={(i % 12) * 90 + 45}
-        cy={Math.floor(i / 12) * 88 + 44}
-        r={1.4}
-        fill={COLORS.deep_black}
-        opacity={0.032}
+    {/* Primary dark base */}
+    <rect width={1080} height={1920} fill={COLORS.bg_primary} />
+    {/* Horizontal grid lines (every 80px) */}
+    {Array.from({ length: Math.ceil(1920 / 80) + 1 }, (_, i) => (
+      <line
+        key={`h${i}`}
+        x1={0} y1={i * 80}
+        x2={1080} y2={i * 80}
+        stroke={COLORS.grid_line}
+        strokeWidth={1}
+      />
+    ))}
+    {/* Vertical grid lines (every 80px) */}
+    {Array.from({ length: Math.ceil(1080 / 80) + 1 }, (_, i) => (
+      <line
+        key={`v${i}`}
+        x1={i * 80} y1={0}
+        x2={i * 80} y2={1920}
+        stroke={COLORS.grid_line}
+        strokeWidth={1}
       />
     ))}
   </g>
 );
 
-// ── SVG defs (call once per scene) ───────────────────────────────────────────
+// Keep PaperBackground as alias → DarkBackground (prevents TS errors in old code)
+export const PaperBackground = DarkBackground;
+
+// ── SVG defs (call once per scene) ────────────────────────────────────────────
 export const GlobalDefs: React.FC = () => (
   <defs>
     <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L8,3 z" fill={COLORS.sky_blue} />
+      <path d="M0,0 L0,6 L8,3 z" fill={COLORS.accent} />
     </marker>
   </defs>
 );
 
-// ── Caption — FIXED POSITION AT TOP, NO BACKGROUND ───────────────────────────
-// ALWAYS at TOP of canvas: x=540, y=140 (single line) or y=116/y=164 (two lines)
-// NO rect, NO background strip, NO border — just the text
+// ── Caption — FIXED POSITION AT BOTTOM, NO BACKGROUND ─────────────────────────
+// ALWAYS at BOTTOM of canvas: x=540, y=1860 (single line) or y=1836/y=1884 (two lines)
+// White text, Galaxie Copernicus ExtraBold, NO rect/border behind it
 interface CaptionProps {
   text: string;
   keyWords?: string[];
@@ -311,20 +358,19 @@ export const Caption: React.FC<CaptionProps> = ({
 }) => {
   const localFrame = frame - sceneFrom;
   const opacity =
-    Math.min(1, localFrame / 8) *               // fade in over 8 frames
-    Math.min(1, (sceneDuration - localFrame) / 8); // fade out over 8 frames
+    Math.min(1, localFrame / 8) *
+    Math.min(1, (sceneDuration - localFrame) / 8);
 
-  // Split into words, flag key words for highlight
   const words = text.split(' ');
   const lowerKeys = keyWords.map(k => k.toLowerCase());
 
-  // Handle long captions: wrap at 52 chars
+  // Wrap at 48 chars per line
   const lines: string[][] = [];
   let currentLine: string[] = [];
   let lineLength = 0;
 
   words.forEach(word => {
-    if (lineLength + word.length + 1 > 52 && currentLine.length > 0) {
+    if (lineLength + word.length + 1 > 48 && currentLine.length > 0) {
       lines.push(currentLine);
       currentLine = [word];
       lineLength = word.length;
@@ -335,8 +381,8 @@ export const Caption: React.FC<CaptionProps> = ({
   });
   if (currentLine.length > 0) lines.push(currentLine);
 
-  // TOP positioning: single line at y=140, two lines at y=116 + y=164
-  const baseY = lines.length === 1 ? 140 : 116;
+  // BOTTOM positioning: single line y=1860, two lines y=1836 + y=1884
+  const baseY = lines.length === 1 ? 1860 : 1836;
   const lineGap = 48;
 
   return (
@@ -347,17 +393,17 @@ export const Caption: React.FC<CaptionProps> = ({
           x={540}
           y={baseY + lineIdx * lineGap}
           textAnchor="middle"
-          fontFamily="'Inter', system-ui, sans-serif"
-          fontSize={38}
-          fontWeight={700}
-          fill={COLORS.text_caption}  /* CRITICAL: explicit default — never inherit white */
+          fontFamily={FONT}
+          fontSize={44}
+          fontWeight={800}
+          fill={COLORS.text_caption}  /* #FFFFFF — white on dark background */
         >
           {lineWords.map((word, i) => {
             const isKey = lowerKeys.some(k =>
               word.toLowerCase().replace(/[.,!?]/g, '').includes(k)
             );
             return (
-              /* Normal words: #1A1A1A  |  Key words: #2563EB  |  NEVER white, NEVER transparent */
+              /* Normal words: #FFFFFF white  |  Key words: series accent  |  NEVER dark */
               <tspan key={i} fill={isKey ? COLORS.text_highlight : COLORS.text_caption}>
                 {word}{i < lineWords.length - 1 ? ' ' : ''}
               </tspan>
@@ -369,33 +415,52 @@ export const Caption: React.FC<CaptionProps> = ({
   );
 };
 
-// ── Corner accent decoration ──────────────────────────────────────────────────
+// ── Bento card — standard tile for content ────────────────────────────────────
+// x, y: top-left corner; w, h: dimensions
+// accent: if true, draws accent-colored border; default uses subtle white border
+interface BentoCardProps {
+  x: number; y: number; w: number; h: number;
+  accent?: boolean; rx?: number; opacity?: number;
+}
+export const BentoCard: React.FC<BentoCardProps> = ({
+  x, y, w, h, accent = false, rx = 20, opacity = 1,
+}) => (
+  <rect
+    x={x} y={y} width={w} height={h} rx={rx}
+    fill={COLORS.bg_secondary}
+    stroke={accent ? COLORS.accent : 'rgba(255,255,255,0.1)'}
+    strokeWidth={accent ? 2 : 1}
+    opacity={opacity}
+  />
+);
+
+// ── Corner accent decoration ───────────────────────────────────────────────────
 export const CornerAccents: React.FC<{ opacity?: number; color?: string }> = ({
-  opacity = 0.4, color = COLORS.sky_blue,
+  opacity = 0.5, color = COLORS.accent,
 }) => (
   <g opacity={opacity}>
-    <path d="M 60,70 L 60,150 M 60,70 L 140,70"   fill="none" stroke={color} strokeWidth={3} strokeLinecap="round" />
-    <path d="M 1020,70 L 1020,150 M 1020,70 L 940,70" fill="none" stroke={color} strokeWidth={3} strokeLinecap="round" />
-    <path d="M 60,1850 L 60,1770 M 60,1850 L 140,1850"   fill="none" stroke={color} strokeWidth={3} strokeLinecap="round" />
-    <path d="M 1020,1850 L 1020,1770 M 1020,1850 L 940,1850" fill="none" stroke={color} strokeWidth={3} strokeLinecap="round" />
+    <path d="M 60,60 L 60,140 M 60,60 L 140,60"    fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round" />
+    <path d="M 1020,60 L 1020,140 M 1020,60 L 940,60"  fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round" />
+    <path d="M 60,1740 L 60,1660 M 60,1740 L 140,1740"  fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round" />
+    <path d="M 1020,1740 L 1020,1660 M 1020,1740 L 940,1740" fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round" />
   </g>
 );
 
-// ── Divider line ──────────────────────────────────────────────────────────────
-export const Divider: React.FC<{ y: number; opacity?: number }> = ({ y, opacity = 0.15 }) => (
-  <line x1={60} y1={y} x2={1020} y2={y} stroke={COLORS.deep_black} strokeWidth={1} opacity={opacity} />
+// ── Divider line ───────────────────────────────────────────────────────────────
+export const Divider: React.FC<{ y: number; opacity?: number }> = ({ y, opacity = 0.2 }) => (
+  <line x1={60} y1={y} x2={1020} y2={y} stroke="rgba(255,255,255,0.2)" strokeWidth={1} opacity={opacity} />
 );
 
-// ── Section label (zone A — topic anchor) ────────────────────────────────────
+// ── Section label (Zone A — topic anchor) ─────────────────────────────────────
 export const SectionLabel: React.FC<{ text: string; y?: number; opacity?: number }> = ({
-  text, y = 120, opacity = 0.6,
+  text, y = 160, opacity = 0.7,
 }) => (
   <text
     x={60} y={y}
-    fontFamily="'Inter', system-ui, sans-serif"
-    fontSize={24} fontWeight={500}
-    fill={COLORS.cool_silver}
-    letterSpacing="0.18em"
+    fontFamily={FONT}
+    fontSize={28} fontWeight={800}
+    fill={COLORS.accent}
+    letterSpacing="0.15em"
     opacity={opacity}
   >
     {text.toUpperCase()}
@@ -431,8 +496,8 @@ import { Scene02_... } from './frames/Scene02_...';
 
 export const Day{N}Scene: React.FC = () => {
   return (
-    // AbsoluteFill background must match bg_paper — acts as fallback
-    <AbsoluteFill style={{ background: COLORS.bg_paper }}>
+    // AbsoluteFill background must match bg_primary (#1D1D1C) — acts as fallback
+    <AbsoluteFill style={{ background: COLORS.bg_primary }}>
 
       {/*
         Audio starts at composition frame 150 (after silent scroll).
@@ -500,6 +565,9 @@ export const Day{N}Scene: React.FC = () => {
 
 > **MINIMUM 300 LINES PER SCENE FILE — this is a hard requirement. See PART 20 for detail.**
 > Every scene must have ≥ 3 animation phases and spring physics on every major element.
+> **FONT: `'Galaxie Copernicus ExtraBold', Georgia, serif` on ALL text — no exceptions.**
+> **BACKGROUND: `DarkBackground` (NOT PaperBackground) as first SVG child.**
+> **BENTO DESIGN: content in `BentoCard` tiles with `bg_secondary` (#2C2C2B) background.**
 
 ```tsx
 /**
@@ -508,10 +576,13 @@ export const Day{N}Scene: React.FC = () => {
  * CSV: {start_time}s → {end_time}s
  * Duration: {frames} frames ({seconds}s)
  *
+ * Theme: Dark (#1D1D1C) + grid + series accent ({ACCENT_COLOR})
+ * Font: Galaxie Copernicus ExtraBold throughout
+ *
  * Animation phases:
- *   Phase 1 (frames 0–30):   Scene reveal — paper lifts, section label slides in, headline springs up
- *   Phase 2 (frames 20–90):  Core content builds — each element staggered by 12 frames, path-draw for diagrams
- *   Phase 3 (frames 80–end): Steady-state micro-animations — pulse, float, counter tick, connector draw
+ *   Phase 1 (frames 0–30):   Scene reveal — section label slides in, headline springs up
+ *   Phase 2 (frames 20–90):  Core content builds — bento cards staggered 12 frames each
+ *   Phase 3 (frames 80–end): Steady-state micro-animations — pulse, float, connector draw
  */
 import React from 'react';
 import {
@@ -522,7 +593,9 @@ import {
   Easing,
 } from 'remotion';
 import { COLORS, SCENE_TIMING, CAPTIONS, ease, snapIn } from '../helpers/timing';
-import { PaperBackground, GlobalDefs, Caption, SectionLabel } from '../helpers/components';
+import { DarkBackground, GlobalDefs, Caption, SectionLabel, BentoCard } from '../helpers/components';
+
+const FONT = "'Galaxie Copernicus ExtraBold', Georgia, serif";
 
 // ─── Easing presets (use these, do not inline magic numbers) ──────────────────
 const SPRING_CONFIG = { damping: 18, stiffness: 180, mass: 0.8 } as const;
@@ -568,115 +641,115 @@ export const Scene{N}_{Name}: React.FC = () => {
   const headlineA     = useSpringEntrance(frame, 6);
   const headlineB     = useSpringEntrance(frame, 12);
 
-  // ── Phase 2: Content build (stagger every 12 frames) ──────────────────────
+  // ── Phase 2: Content build — bento cards (stagger every 12 frames) ────────
   const card1 = useSpringEntrance(frame, 24);
   const card2 = useSpringEntrance(frame, 36);
   const card3 = useSpringEntrance(frame, 48);
   const card4 = useSpringEntrance(frame, 60);
 
   // ── Path draw (diagram connectors) ────────────────────────────────────────
-  const connectorLength = 200; // measure real SVG path length
+  const connectorLength = 200;
   const connectorDash   = usePathDraw(frame, 40, connectorLength, 25);
 
   // ── Phase 3: Micro-animations (steady-state) ──────────────────────────────
-  const breathe    = Math.sin(frame * 0.06) * 4;           // gentle float ±4px
-  const pulse      = 1 + Math.sin(frame * 0.08) * 0.015;  // scale pulse
-  const shimmer    = interpolate(Math.sin(frame * 0.04), [-1, 1], [0.85, 1]); // opacity shimmer
+  const breathe    = Math.sin(frame * 0.06) * 4;
+  const pulse      = 1 + Math.sin(frame * 0.08) * 0.015;
+  const shimmer    = interpolate(Math.sin(frame * 0.04), [-1, 1], [0.85, 1]);
 
   // ── Counter animation ──────────────────────────────────────────────────────
-  const counterValue = useCounter(frame, 50, 97, 40); // tick 0→97 over 40 frames
+  const counterValue = useCounter(frame, 50, 97, 40);
 
   const caption = CAPTIONS.find(c => c.from === SCENE_TIMING.s{N}.from);
 
   return (
-    <AbsoluteFill style={{ background: COLORS.bg_paper }}>
+    <AbsoluteFill style={{ background: COLORS.bg_primary }}>
       <svg style={{ position: 'absolute', inset: 0 }} width={1080} height={1920}>
 
-        {/* ALWAYS FIRST — paper background */}
-        <PaperBackground />
+        {/* ALWAYS FIRST — dark background with grid */}
+        <DarkBackground />
         <GlobalDefs />
 
-        {/* ── ZONE A — Topic anchor label (y=220–300) — below caption strip ── */}
+        {/* ── ZONE A — Topic anchor label (y=60–200) ────────────────────── */}
         <g transform={`translate(0, ${labelEntrance.translateY})`} opacity={labelEntrance.opacity}>
-          <SectionLabel text="MODULE NAME · CONCEPT" y={260} opacity={0.55} />
+          <SectionLabel text="MODULE NAME · CONCEPT" y={160} opacity={0.8} />
         </g>
 
-        {/* ── ZONE B — Primary statement (y=320–540) ──────────────────────── */}
+        {/* ── ZONE B — Primary headline (y=220–500) ─────────────────────── */}
         <g transform={`translate(0, ${headlineA.translateY})`} opacity={headlineA.opacity}>
           <text
-            x={60} y={400}
-            fontFamily="'Inter', system-ui, sans-serif"
-            fontSize={72} fontWeight={800}
-            fill={COLORS.deep_black}
+            x={60} y={320}
+            fontFamily={FONT}
+            fontSize={96} fontWeight={800}
+            fill={COLORS.white}
           >
             Main Headline
           </text>
         </g>
         <g transform={`translate(0, ${headlineB.translateY})`} opacity={headlineB.opacity}>
           <text
-            x={60} y={490}
-            fontFamily="'Inter', system-ui, sans-serif"
-            fontSize={48} fontWeight={400}
-            fill={COLORS.sky_blue}
+            x={60} y={430}
+            fontFamily={FONT}
+            fontSize={52} fontWeight={800}
+            fill={COLORS.accent}
           >
             Supporting sub-line
           </text>
         </g>
 
-        {/* ── ZONE C — Main visual content (y=560–1880) ──────────────────── */}
+        {/* ── ZONE C — Bento content (y=520–1740) ────────────────────────── */}
         {/*
-          Render complex diagrams, cards, path-draw connectors, counters here.
-          Each major element wrapped in <g opacity={cardN.opacity} transform={...translateY...}>
-          NEVER use position: absolute on child elements inside SVG.
-          VERIFY bounding boxes don't overlap (pen-test each card's rect).
+          Use BentoCard tiles (bg_secondary #2C2C2B, rx=20).
+          Max 4 primary content elements. Each animated with spring entrance.
+          Every scene needs ≥1 thematic SVG illustration.
+          NEVER place content below y=1740 (caption zone starts there).
         */}
 
-        {/* Example: animated card with spring entrance */}
-        <g
-          opacity={card1.opacity}
-          transform={`translate(60, ${560 + card1.translateY})`}
-        >
-          <rect
-            x={0} y={0} width={960} height={160} rx={16}
-            fill={COLORS.sky_blue} fillOpacity={0.08}
-            stroke={COLORS.sky_blue} strokeWidth={2}
-          />
-          <text x={40} y={92} fontFamily="'Inter', sans-serif" fontSize={36} fontWeight={700} fill={COLORS.deep_black}>
+        {/* Example: full-width bento card with spring entrance */}
+        <g opacity={card1.opacity} transform={`translate(0, ${card1.translateY})`}>
+          <BentoCard x={60} y={520} w={960} h={200} accent />
+          <text x={100} y={638} fontFamily={FONT} fontSize={44} fontWeight={800} fill={COLORS.white}>
             Card One Content
           </text>
         </g>
 
+        {/* Example: two-column bento layout */}
+        <g opacity={card2.opacity} transform={`translate(0, ${card2.translateY})`}>
+          <BentoCard x={60}  y={744} w={460} h={320} />
+          <BentoCard x={560} y={744} w={460} h={320} accent />
+          <text x={100} y={920} fontFamily={FONT} fontSize={40} fontWeight={800} fill={COLORS.white}>Left tile</text>
+          <text x={600} y={920} fontFamily={FONT} fontSize={40} fontWeight={800} fill={COLORS.accent}>Right tile</text>
+        </g>
+
         {/* Example: SVG path-draw connector */}
         <path
-          d="M 540,660 L 540,860"
+          d="M 540,1090 L 540,1200"
           fill="none"
-          stroke={COLORS.green}
+          stroke={COLORS.accent}
           strokeWidth={3}
           strokeDasharray={connectorLength}
           strokeDashoffset={connectorDash}
           strokeLinecap="round"
         />
 
-        {/* Example: counter display */}
-        <g opacity={card2.opacity} transform={`translate(540, ${900 + card2.translateY})`}>
+        {/* Example: large counter */}
+        <g opacity={card3.opacity} transform={`translate(540, ${1300 + card3.translateY})`}>
           <text
             textAnchor="middle"
-            fontFamily="'Inter', sans-serif" fontSize={120} fontWeight={900}
-            fill={COLORS.orange}
+            fontFamily={FONT} fontSize={160} fontWeight={800}
+            fill={COLORS.accent}
           >
             {counterValue}%
           </text>
         </g>
 
-        {/* Example: breathing/floating element in Phase 3 */}
-        <g transform={`translate(540, ${1200 + breathe})`} style={{ transformOrigin: '540px 1200px' }}>
-          <circle cx={0} cy={0} r={60} fill={COLORS.amber} fillOpacity={0.15 * shimmer} />
-          <circle cx={0} cy={0} r={60} fill="none" stroke={COLORS.amber} strokeWidth={2}
+        {/* Example: floating micro-animation */}
+        <g transform={`translate(540, ${1580 + breathe})`}>
+          <circle cx={0} cy={0} r={48} fill={COLORS.accent} fillOpacity={0.1 * shimmer} />
+          <circle cx={0} cy={0} r={48} fill="none" stroke={COLORS.accent} strokeWidth={2}
             transform={`scale(${pulse})`} style={{ transformOrigin: '0px 0px' }} />
         </g>
 
-        {/* ── CAPTION — FIXED AT TOP (y=140), NO BACKGROUND ──────────────── */}
-        {/* Caption renders FIRST in SVG order but visually appears at y=140 (top strip) */}
+        {/* ── CAPTION — FIXED AT BOTTOM (y=1860), white, Galaxie Copernicus ─ */}
         {caption && (
           <Caption
             text={caption.text}
@@ -702,7 +775,8 @@ export const Scene{N}_{Name}: React.FC = () => {
 ## PART 9 — Scene01_ScrollTimeline EXACT IMPLEMENTATION
 
 > **Day counter rule:** Always show `DAY N / TOTAL` in the top-left of Scene01.
-> Series totals: AI = 120, Java = 105, Daily Mystery/HiddenWorld = 100.
+> Series totals: AI = 120, Java = 105, Mystery/HiddenWorld = 100, SysDesign = 120, DSA = 120.
+> **This scene uses DarkBackground + grid + Galaxie Copernicus ExtraBold.**
 
 ```tsx
 /**
@@ -710,187 +784,137 @@ export const Scene{N}_{Name}: React.FC = () => {
  * Duration: 150 frames = 5s (SILENT — no audio plays during this scene)
  * Shows: full day list from architecture file, scrolls to current day N
  * Shows: "DAY N / TOTAL" progress badge (top-left)
- * Row height: 220px — exactly 6 rows visible at a time
+ * Theme: Dark #1D1D1C + grid + series accent color
+ * Font: Galaxie Copernicus ExtraBold
  */
 import React from 'react';
 import { AbsoluteFill, useCurrentFrame, interpolate, Easing } from 'remotion';
 import { COLORS } from '../helpers/timing';
-import { PaperBackground } from '../helpers/components';
+import { DarkBackground } from '../helpers/components';
+
+const FONT = "'Galaxie Copernicus ExtraBold', Georgia, serif";
 
 interface Props {
   currentDay: number;    // e.g. 27
-  totalDays: number;     // AI=120, Java=105, HiddenWorld=100
+  totalDays: number;     // AI=120, Java=105, HiddenWorld=100, SysDesign=120, DSA=120
   seriesTitle: string;   // e.g. "AGENTIC AI · FIRST PRINCIPLES"
 }
 
 // !! IMPORTANT: Replace this array with EVERY day from the architecture file
-// For AI series: 120 entries from architecture_AI.md
-// For Java series: 105 entries from architecture_java.md
-// For HiddenWorld: 100 entries from architecture.md
 const ALL_DAYS = [
   { day: 1,  topic: "What Is Intelligence?" },
   { day: 2,  topic: "Tokens and Language" },
   // ... FILL ALL DAYS FROM ARCHITECTURE FILE
-  { day: 27, topic: "Tools" },  // ← current day
+  { day: 27, topic: "Tools" },
   // ... remaining days
 ];
 
-const ROW_H   = 220;   // px per row
-const VISIBLE = 6;     // rows visible at once
-const VIEW_H  = ROW_H * VISIBLE;                   // 1320px
-const VIEW_Y  = Math.round((1920 - VIEW_H) / 2);   // 300px — top of visible window
+const ROW_H   = 220;
+const VISIBLE = 6;
+const VIEW_H  = ROW_H * VISIBLE;
+const VIEW_Y  = Math.round((1920 - VIEW_H) / 2);
 
 export const Scene01_ScrollTimeline: React.FC<Props> = ({ currentDay, totalDays, seriesTitle }) => {
   const frame = useCurrentFrame();
 
-  // Scroll from Day 1 at top → current day centered
   const targetScrollY = -(currentDay - 1 - Math.floor(VISIBLE / 2) + 0.5) * ROW_H;
-  const clampedTarget = Math.min(0, Math.max(
-    -(ALL_DAYS.length - VISIBLE) * ROW_H,
-    targetScrollY,
-  ));
+  const clampedTarget = Math.min(0, Math.max(-(ALL_DAYS.length - VISIBLE) * ROW_H, targetScrollY));
 
-  const scrollY = interpolate(
-    frame,
-    [0, 120],
-    [0, clampedTarget],
-    { extrapolateRight: 'clamp', easing: Easing.bezier(0.22, 1, 0.36, 1) },
-  );
+  const scrollY = interpolate(frame, [0, 120], [0, clampedTarget], {
+    extrapolateRight: 'clamp', easing: Easing.bezier(0.22, 1, 0.36, 1),
+  });
 
-  // Overall scene fade-out at end (frames 130–149)
-  const sceneFade = interpolate(frame, [130, 149], [1, 0], { extrapolateRight: 'clamp' });
-
-  // Header + badge fade-in
-  const headerEnter = interpolate(frame, [0, 20], [0, 1], { extrapolateRight: 'clamp' });
-
-  // Progress bar width (currentDay / totalDays * 960px usable width)
+  const sceneFade    = interpolate(frame, [130, 149], [1, 0], { extrapolateRight: 'clamp' });
+  const headerEnter  = interpolate(frame, [0, 20], [0, 1], { extrapolateRight: 'clamp' });
   const progressWidth = (currentDay / totalDays) * 960;
   const progressEnter = interpolate(frame, [10, 60], [0, progressWidth], {
-    extrapolateRight: 'clamp',
-    easing: Easing.bezier(0.4, 0, 0.2, 1),
+    extrapolateRight: 'clamp', easing: Easing.bezier(0.4, 0, 0.2, 1),
   });
 
   return (
-    <AbsoluteFill style={{ background: COLORS.bg_paper }}>
-      <svg
-        style={{ position: 'absolute', inset: 0, opacity: sceneFade }}
-        width={1080}
-        height={1920}
-      >
-        <PaperBackground />
+    <AbsoluteFill style={{ background: COLORS.bg_primary }}>
+      <svg style={{ position: 'absolute', inset: 0, opacity: sceneFade }} width={1080} height={1920}>
+        <DarkBackground />
 
         {/* ── DAY N / TOTAL progress badge — top-left ─────────────────────── */}
         <g opacity={headerEnter}>
-          {/* Large day counter */}
           <text
-            x={60} y={90}
-            fontFamily="'Inter', system-ui, sans-serif"
-            fontSize={28} fontWeight={800}
-            fill={COLORS.sky_blue}
-            letterSpacing="0.05em"
+            x={60} y={100}
+            fontFamily={FONT} fontSize={40} fontWeight={800}
+            fill={COLORS.accent} letterSpacing="0.05em"
           >
             DAY {currentDay}
           </text>
           <text
-            x={60 + 28 * (String(currentDay).length * 0.7 + 4)}
-            y={90}
-            fontFamily="'Inter', system-ui, sans-serif"
-            fontSize={28} fontWeight={400}
-            fill={COLORS.cool_silver}
+            x={60 + 40 * (String(currentDay).length * 0.65 + 3.5)}
+            y={100}
+            fontFamily={FONT} fontSize={40} fontWeight={800}
+            fill={COLORS.text_muted}
           >
             / {totalDays}
           </text>
           {/* Progress track */}
-          <rect x={60} y={110} width={960} height={6} rx={3} fill={COLORS.deep_black} opacity={0.08} />
-          {/* Progress fill — animates in */}
-          <rect x={60} y={110} width={progressEnter} height={6} rx={3} fill={COLORS.sky_blue} opacity={0.7} />
+          <rect x={60} y={120} width={960} height={6} rx={3} fill="rgba(255,255,255,0.08)" />
+          {/* Progress fill */}
+          <rect x={60} y={120} width={progressEnter} height={6} rx={3} fill={COLORS.accent} opacity={0.9} />
         </g>
 
-        {/* Header — series title — FIXED, does NOT scroll */}
+        {/* Series title — centered, fixed */}
         <text
-          x={540} y={175}
+          x={540} y={190}
           textAnchor="middle"
-          fontFamily="'Inter', system-ui, sans-serif"
-          fontSize={22} fontWeight={500}
-          fill={COLORS.cool_silver}
-          letterSpacing="0.22em"
-          opacity={headerEnter * 0.7}
+          fontFamily={FONT} fontSize={26} fontWeight={800}
+          fill={COLORS.text_muted} letterSpacing="0.18em"
+          opacity={headerEnter * 0.8}
         >
           {seriesTitle}
         </text>
 
-        {/* Clip scrolling rows to visible window */}
+        {/* Clip scrolling rows */}
         <defs>
           <clipPath id={`scrollClip-d${currentDay}`}>
             <rect x={0} y={VIEW_Y} width={1080} height={VIEW_H} />
           </clipPath>
         </defs>
 
-        {/* Top & bottom fade gradients for scroll window — use opacity mask, not gradient fill */}
-        <rect x={0} y={VIEW_Y}         width={1080} height={48}  fill={COLORS.bg_paper} opacity={0.85} />
-        <rect x={0} y={VIEW_Y + VIEW_H - 48} width={1080} height={48}  fill={COLORS.bg_paper} opacity={0.85} />
+        {/* Fade masks at scroll window edges — use bg_primary fill */}
+        <rect x={0} y={VIEW_Y} width={1080} height={60} fill={COLORS.bg_primary} opacity={0.8} />
+        <rect x={0} y={VIEW_Y + VIEW_H - 60} width={1080} height={60} fill={COLORS.bg_primary} opacity={0.8} />
 
-        {/* Scrolling rows group */}
-        <g
-          clipPath={`url(#scrollClip-d${currentDay})`}
-          transform={`translate(0, ${VIEW_Y + scrollY})`}
-        >
+        {/* Scrolling rows */}
+        <g clipPath={`url(#scrollClip-d${currentDay})`} transform={`translate(0, ${VIEW_Y + scrollY})`}>
           {ALL_DAYS.map((d, idx) => {
             const isCurrent = d.day === currentDay;
             const rowY = idx * ROW_H;
-
             return (
               <g key={d.day}>
-                {/* Current day background tint */}
                 {isCurrent && (
-                  <rect
-                    x={60} y={rowY + 10}
-                    width={960} height={ROW_H - 20}
-                    rx={8}
-                    fill={COLORS.sky_blue}
-                    opacity={0.06}
-                  />
+                  <rect x={60} y={rowY + 12} width={960} height={ROW_H - 24} rx={16}
+                    fill={COLORS.accent} opacity={0.08} />
                 )}
-
-                {/* Left accent bar — current day only */}
                 {isCurrent && (
-                  <rect x={60} y={rowY + 30} width={6} height={160} rx={3} fill={COLORS.sky_blue} />
+                  <rect x={60} y={rowY + 30} width={6} height={ROW_H - 60} rx={3} fill={COLORS.accent} />
                 )}
-
-                {/* Day number */}
                 <text
-                  x={isCurrent ? 90 : 80}
-                  y={rowY + 85}
-                  fontFamily="'Inter', system-ui, sans-serif"
-                  fontSize={isCurrent ? 52 : 40}
-                  fontWeight={isCurrent ? 900 : 600}
-                  fill={isCurrent ? COLORS.sky_blue : COLORS.deep_black}
-                  opacity={isCurrent ? 1 : 0.45}
+                  x={isCurrent ? 90 : 80} y={rowY + 88}
+                  fontFamily={FONT}
+                  fontSize={isCurrent ? 56 : 40} fontWeight={800}
+                  fill={isCurrent ? COLORS.accent : COLORS.text_muted}
+                  opacity={isCurrent ? 1 : 0.4}
                 >
                   {`DAY ${d.day}`}
                 </text>
-
-                {/* Topic title */}
                 <text
-                  x={isCurrent ? 90 : 80}
-                  y={rowY + 142}
-                  fontFamily="'Inter', system-ui, sans-serif"
-                  fontSize={isCurrent ? 34 : 28}
-                  fontWeight={isCurrent ? 700 : 400}
-                  fill={isCurrent ? COLORS.deep_black : COLORS.cool_silver}
-                  opacity={isCurrent ? 0.9 : 0.4}
+                  x={isCurrent ? 90 : 80} y={rowY + 148}
+                  fontFamily={FONT}
+                  fontSize={isCurrent ? 36 : 28} fontWeight={800}
+                  fill={isCurrent ? COLORS.white : COLORS.text_muted}
+                  opacity={isCurrent ? 0.9 : 0.35}
                 >
                   {d.topic}
                 </text>
-
-                {/* Row divider */}
-                <line
-                  x1={60} y1={rowY + ROW_H - 1}
-                  x2={1020} y2={rowY + ROW_H - 1}
-                  stroke={COLORS.deep_black}
-                  strokeWidth={1}
-                  opacity={0.07}
-                />
+                <line x1={60} y1={rowY + ROW_H - 1} x2={1020} y2={rowY + ROW_H - 1}
+                  stroke="rgba(255,255,255,0.07)" strokeWidth={1} />
               </g>
             );
           })}
@@ -985,25 +1009,38 @@ When in doubt — **split**. Never merge two distinct concepts.
 
 ### Background — NON-NEGOTIABLE
 ```
-EVERY scene: <PaperBackground /> as first SVG child
-EVERY AbsoluteFill: style={{ background: COLORS.bg_paper }}
-ZERO pure white (#FFFFFF) backgrounds
-ZERO pure black (#000000) backgrounds  
-ZERO colored background panels
+EVERY scene: <DarkBackground /> as FIRST SVG child (NOT PaperBackground)
+EVERY AbsoluteFill: style={{ background: COLORS.bg_primary }}   ← #1D1D1C
+ZERO light/white backgrounds — this is a DARK theme
+ZERO old paper (#F5F0E8) backgrounds — ABSOLUTELY FORBIDDEN
+ZERO pure black (#000000) — use #1D1D1C
+ZERO colored background panels (only #1D1D1C + #2C2C2B bento cards)
+Grid drawn inside DarkBackground: horizontal + vertical lines, 80px cells, rgba(255,255,255,0.5)
+```
+
+### Font — NON-NEGOTIABLE
+```
+EVERY text element in EVERY scene: fontFamily="'Galaxie Copernicus ExtraBold', Georgia, serif"
+fontWeight MUST always be 800 (ExtraBold is weight 800)
+NO Inter, NO system-ui, NO sans-serif as primary font
+ALWAYS bold, ALWAYS large — minimum 32px across the board
 ```
 
 ### Colors — ONLY FROM COLORS OBJECT
 ```
-✅ fill={COLORS.sky_blue}
+✅ fill={COLORS.accent}           ← series-specific accent color
+✅ fill={COLORS.white}            ← primary text (#FFFFFF)
+✅ fill={COLORS.text_muted}       ← secondary text (rgba(255,255,255,0.55))
+✅ fill={COLORS.bg_secondary}     ← bento card fill (#2C2C2B)
 ❌ fill="#2563EB"    ← raw hex not allowed outside COLORS definition
-❌ fill="blue"      ← CSS color names not allowed
-❌ fill={`rgba(...)`} ← rgba not allowed for background fills
+❌ fill="white"      ← CSS color names not allowed (use COLORS.white)
+❌ fill="black"      ← use COLORS.bg_primary
 ```
 
 ### Forbidden — HARD STOPS
 ```
 ❌ linearGradient / radialGradient — anywhere
-❌ filter: blur(...) — anywhere  
+❌ filter: blur(...) — anywhere
 ❌ CSS box-shadow with colored spread
 ❌ Emoji characters — anywhere in any string
 ❌ CSS transitions — use interpolate() instead
@@ -1016,6 +1053,11 @@ ZERO colored background panels
 ❌ three.js / Three.js — ABSOLUTELY NO 3D.
 ❌ WebGL / Canvas 3D context — ABSOLUTELY NO 3D.
 ❌ framer-motion — CSS-based, breaks Remotion render pipeline
+❌ PaperBackground — REPLACED by DarkBackground
+❌ COLORS.bg_paper — old color, FORBIDDEN (use COLORS.bg_primary)
+❌ fontFamily="'Inter', ..." — FORBIDDEN (use Galaxie Copernicus ExtraBold)
+❌ fontFamily with any sans-serif as primary — FORBIDDEN
+❌ Pencil art style / paper texture — FORBIDDEN
 ```
 
 ### Animation method — 2D SVG ONLY
@@ -1029,38 +1071,43 @@ ALL animations in this project are 2D, inline SVG, using remotion hooks:
   ✅ Math.sin() / Math.cos() for oscillation
   ✅ @remotion/transitions for slide/wipe/fade between scenes
 
-NEVER use 3D rendering of any kind. The entire visual language is flat 2D paper art.
+NEVER use 3D rendering of any kind. The entire visual language is flat 2D SVG.
 ```
 
-### Typography minimum sizes
+### Typography scale — GALAXIE COPERNICUS EXTRABOLD ONLY
 ```
-Display/hero number:  240–360px, weight 900
-Scene headline:       64–96px,   weight 800
-Section title:        52–72px,   weight 700
-Key term label:       44–56px,   weight 700
-Body text:            36–44px,   weight 500
-Supporting label:     28–34px,   weight 400
-Caption:              38px,      weight 700  ← FIXED
-Absolute minimum:     28px — never go below this
+Font family:          'Galaxie Copernicus ExtraBold', Georgia, serif — EVERY element
+Font weight:          800 (ExtraBold) — ALWAYS 800, never lighter
+
+Display/hero number:  240–360px, weight 800
+Scene headline H1:    100–120px, weight 800
+Section title H2:     72–88px,   weight 800
+Key term H3:          52–64px,   weight 800
+Body text:            40–48px,   weight 800
+Supporting label:     32–38px,   weight 800
+Caption (bottom):     44px,      weight 800  ← FIXED AT BOTTOM
+Absolute minimum:     32px — never go below this
 ```
 
 ### Layout safe zones
 ```
-Caption zone:   y = 50–200   (TOP STRIP — reserved for captions ONLY)
-Caption line 1: y = 140      (single line) or y=116 (first of two lines)
-Caption line 2: y = 164      (second line, 48px below first)
-Zone A:         y = 220–300  (section label)
-Zone B:         y = 320–540  (headline)
-Zone C:         y = 560–1880 (visual content — main diagram area)
-Bottom padding: y = 1880–1920
-Left margin:    x = 60px
-Right margin:   x = 1020px
-Usable width:   960px
+Content zone top:    y = 60      (start of all content)
+Zone A:              y = 60–200  (section label / series badge)
+Zone B:              y = 220–500 (headline — H1, large text)
+Zone C:              y = 520–1740 (visual content — bento cards, diagrams)
+Content zone bottom: y = 1740    (NO content below this line)
+Caption zone:        y = 1760–1920 (BOTTOM STRIP — reserved for captions)
+Caption single line: y = 1860
+Caption two lines:   y = 1836 (line 1), y = 1884 (line 2), 48px gap
+Left margin:         x = 60px
+Right margin:        x = 1020px
+Usable width:        960px
 
 RULES:
-  ✅ No content element above y=220 (caption zone reserved)
-  ✅ No content element below y=1880
-  ✅ Caption ALWAYS at top (y=140 or y=116/164) — never at bottom
+  ✅ No content element above y=60
+  ✅ No content element below y=1740 (caption zone reserved)
+  ✅ Caption ALWAYS at BOTTOM (y=1860 or y=1836/1884) — NEVER at top
+  ✅ All text uses Galaxie Copernicus ExtraBold
 ```
 
 ### Anti-overlap rule
@@ -1070,45 +1117,63 @@ Before placing any element, calculate its bounding box:
   rect bounding box  = (x, y, x + width, y + height)
 
 Minimum clearance:
-  text-to-text:    24px vertical
+  text-to-text:        24px vertical
   SVG element-to-text: 20px
-  Element-to-edge: 60px left/right, 220px top (caption zone above), 40px bottom
+  Element-to-left:     60px minimum
+  Element-to-right:    60px minimum (max x=1020)
+  Content-to-bottom:   y=1740 maximum (caption zone below)
 ```
 
 ### Captions — FIXED SPECIFICATION (never change these values)
 ```
-Position:     x=540, y=140 (TOP — single line), textAnchor="middle"
-Two lines:    y=116 (line 1), y=164 (line 2), 48px gap
-Font:         Inter, 38px, weight 700
-Lines:        max 52 chars/line
+Position:     x=540, y=1860 (BOTTOM — single line), textAnchor="middle"
+Two lines:    y=1836 (line 1), y=1884 (line 2), 48px gap
+Font:         'Galaxie Copernicus ExtraBold', Georgia, serif
+fontSize:     44px, fontWeight: 800
+Lines:        max 48 chars/line
 Background:   NONE — zero rect behind captions
 Border:       NONE
-Highlight:    key words in COLORS.text_highlight (#2563EB)
+Highlight:    key words in COLORS.text_highlight (series accent color)
+Normal words: COLORS.text_caption (#FFFFFF — white)
 Fade:         8 frames in / 8 frames out
 
-CAPTION IS AT THE TOP OF THE CANVAS — NOT the bottom.
-Content zone starts at y=220 (below caption strip).
+CAPTION IS AT THE BOTTOM OF THE CANVAS — NOT the top.
+Content zone ends at y=1740. Caption zone is y=1760–1920.
 ```
 
 ### Caption color — HARD RULE (enforced without exception)
 ```
-Normal caption words:   fill={COLORS.text_caption}   → #1A1A1A  (near-black)
-Key/highlight words:    fill={COLORS.text_highlight}  → #2563EB  (sky blue)
+Normal caption words:   fill={COLORS.text_caption}   → #FFFFFF  (white)
+Key/highlight words:    fill={COLORS.text_highlight}  → series accent color
 
 FORBIDDEN caption colors:
-  ❌ fill="white"        ← absolute ban
-  ❌ fill="#FFFFFF"      ← absolute ban
-  ❌ fill="#FFF"         ← absolute ban
+  ❌ fill="black"        ← absolute ban (invisible on dark background)
+  ❌ fill="#1A1A1A"      ← absolute ban
   ❌ fill="transparent"  ← absolute ban
-  ❌ fill={COLORS.bg_paper}  ← SAME AS WHITE ON THIS BACKGROUND — absolute ban
-  ❌ no fill attribute at all on <text> — MUST always have fill={COLORS.text_caption}
+  ❌ no fill attribute at all — MUST always have fill={COLORS.text_caption}
 
-The paper background is #F5F0E8 (warm off-white).
-Any light-colored caption text becomes invisible on it.
-Only #1A1A1A (near-black) and #2563EB (blue) are readable on this background.
+The background is #1D1D1C (dark). Only white (#FFFFFF) and the accent color
+are readable. Any dark caption text becomes invisible.
 
-Always use the Caption component from components.tsx — never hand-write SVG caption text
-in a scene file, as this bypasses the color enforcement.
+Always use the Caption component from components.tsx.
+```
+
+### Bento design rules
+```
+ALL content cards/tiles MUST use bento design:
+  ✅ BentoCard component or: <rect rx={20} fill={COLORS.bg_secondary} stroke="rgba(255,255,255,0.1)" />
+  ✅ Card background: COLORS.bg_secondary (#2C2C2B)
+  ✅ Accent border: COLORS.accent at strokeWidth=2 (for highlighted cards)
+  ✅ Default border: rgba(255,255,255,0.1) strokeWidth=1 (for neutral cards)
+  ✅ Corner radius: rx=20 minimum
+  ✅ Gap between cards: 20px
+  ✅ Content padding inside card: 40px from card edge
+
+Bento layouts:
+  Full width:    x=60, w=960
+  Two columns:   left x=60 w=460, right x=560 w=440 (20px gap)
+  Three columns: each w=300 with 20px gaps
+  Feature + side: main x=60 w=620, side x=700 w=320
 ```
 
 ---
@@ -1116,106 +1181,170 @@ in a scene file, as this bypasses the color enforcement.
 ## PART 12 — LAYOUT PATTERNS FOR ZONE C
 
 Choose ONE per scene. Do not mix patterns.
+**ALL patterns use dark theme (#1D1D1C bg), bento cards (#2C2C2B), Galaxie Copernicus ExtraBold.**
 
-### Pattern A — Statement + Bullet List
+### Pattern A — Bento Bullet List (statement + card tiles)
 ```tsx
-// Title statement at y=240, then bullet rows starting y=460
-// Each bullet row: accent bar (6×52px) at x=60, text at x=90
-// Row height: 100px, so rows at y=460, 560, 660, 760
-// Max 4 bullets. If more needed → split into 2 scenes
-{['Point one text', 'Point two text', 'Point three text'].map((item, i) => (
-  <g key={i} opacity={itemEnters[i]}>
-    <rect x={60} y={460 + i * 100} width={6} height={52} rx={3} fill={COLORS.sky_blue} />
-    <text x={90} y={496 + i * 100}
-      fontFamily="'Inter', system-ui, sans-serif"
-      fontSize={40} fontWeight={600} fill={COLORS.deep_black}>
-      {item}
-    </text>
-  </g>
-))}
+// Full headline in Zone B, then 3–4 bento card rows in Zone C
+// Card height: 160px with 20px gaps
+// Content zone: y=520–1740
+const FONT = "'Galaxie Copernicus ExtraBold', Georgia, serif";
+const items = ['Point one', 'Point two', 'Point three'];
+
+{items.map((item, i) => {
+  const cardY = 520 + i * 180;
+  return (
+    <g key={i} opacity={itemEnters[i]} transform={`translate(0, ${itemEnters[i].translateY ?? 0})`}>
+      {/* Bento card */}
+      <rect x={60} y={cardY} width={960} height={160} rx={20}
+        fill={COLORS.bg_secondary}
+        stroke={i === 0 ? COLORS.accent : 'rgba(255,255,255,0.1)'}
+        strokeWidth={i === 0 ? 2 : 1} />
+      {/* Accent left bar */}
+      <rect x={60} y={cardY} width={6} height={160} rx={3} fill={COLORS.accent} />
+      {/* Text */}
+      <text x={120} y={cardY + 92} fontFamily={FONT} fontSize={44} fontWeight={800} fill={COLORS.white}>
+        {item}
+      </text>
+    </g>
+  );
+})}
 ```
 
-### Pattern B — Two-Column Comparison
+### Pattern B — Two-Column Bento Comparison
 ```tsx
-// Vertical divider at x=540
-// Left panel x=60–500, Right panel x=580–1020
-// Panel header at y=300, content at y=400+
+// Two bento cards side by side
+// Left card x=60 w=460, right card x=560 w=440, gap=40px
+// Card height: 640px each (fits Zone C nicely)
+const FONT = "'Galaxie Copernicus ExtraBold', Georgia, serif";
 
-<line x1={540} y1={260} x2={540} y2={1680} stroke={COLORS.deep_black} strokeWidth={1} opacity={0.15} />
+{/* Left bento card */}
+<g opacity={card1.opacity} transform={`translate(0, ${card1.translateY})`}>
+  <rect x={60} y={520} width={460} height={640} rx={20}
+    fill={COLORS.bg_secondary} stroke="rgba(255,255,255,0.1)" strokeWidth={1} />
+  <text x={280} y={620} textAnchor="middle" fontFamily={FONT} fontSize={40} fontWeight={800} fill={COLORS.text_muted}>
+    BEFORE
+  </text>
+</g>
 
-{/* Left panel */}
-<text x={280} y={320} textAnchor="middle" fontSize={36} fontWeight={700} fill={COLORS.cool_silver}>
-  BEFORE
-</text>
-
-{/* Right panel */}
-<text x={800} y={320} textAnchor="middle" fontSize={36} fontWeight={700} fill={COLORS.sky_blue}>
-  AFTER
-</text>
+{/* Right bento card — accent border */}
+<g opacity={card2.opacity} transform={`translate(0, ${card2.translateY})`}>
+  <rect x={560} y={520} width={440} height={640} rx={20}
+    fill={COLORS.bg_secondary} stroke={COLORS.accent} strokeWidth={2} />
+  <text x={780} y={620} textAnchor="middle" fontFamily={FONT} fontSize={40} fontWeight={800} fill={COLORS.accent}>
+    AFTER
+  </text>
+</g>
 ```
 
-### Pattern C — Flow Diagram (max 4 nodes, max 5 arrows)
+### Pattern C — Flow Diagram with Bento Nodes (max 4 nodes, max 5 arrows)
 ```tsx
-// Nodes: rounded rects, stroke = accent, fill = accent at opacity 0.1
-// Labels: inside nodes, fontSize=36, fontWeight=700
-// Arrows: path with marker-end="url(#arrow)" from GlobalDefs
+// Nodes: bento cards (rx=20), accent border, Galaxie Copernicus ExtraBold labels
+const FONT = "'Galaxie Copernicus ExtraBold', Georgia, serif";
+const NODE_W = 380, NODE_H = 100;
 
-const NODE_W = 280, NODE_H = 80;
-// Node positions — choose: horizontal row, vertical stack, or L-shape
-
-<rect x={100} y={500} width={NODE_W} height={NODE_H} rx={12}
-  fill={COLORS.sky_blue} fillOpacity={0.1}
-  stroke={COLORS.sky_blue} strokeWidth={2} />
-<text x={100 + NODE_W/2} y={548} textAnchor="middle"
-  fontSize={36} fontWeight={700} fill={COLORS.deep_black}>
+<rect x={100} y={580} width={NODE_W} height={NODE_H} rx={20}
+  fill={COLORS.bg_secondary}
+  stroke={COLORS.accent} strokeWidth={2} />
+<text x={100 + NODE_W / 2} y={580 + 62} textAnchor="middle"
+  fontFamily={FONT} fontSize={40} fontWeight={800} fill={COLORS.white}>
   NODE LABEL
 </text>
 
 {/* Arrow connecting nodes */}
-<line x1={380} y1={540} x2={480} y2={540}
-  stroke={COLORS.sky_blue} strokeWidth={2.5}
+<line x1={480} y1={630} x2={580} y2={630}
+  stroke={COLORS.accent} strokeWidth={2.5}
   markerEnd="url(#arrow)" />
 ```
 
-### Pattern D — Large Number / Statistic
+### Pattern D — Large Number / Statistic (hero number)
 ```tsx
 // For dramatic single facts: "45 minutes", "385,000 km", "2 seconds"
-<text x={540} y={900} textAnchor="middle"
-  fontFamily="'Inter', system-ui, sans-serif"
-  fontSize={320} fontWeight={900}
-  fill={COLORS.sky_blue}
-  opacity={enter * 0.15}>  {/* ghost layer */}
+const FONT = "'Galaxie Copernicus ExtraBold', Georgia, serif";
+
+{/* Ghost layer behind main number */}
+<text x={540} y={1000} textAnchor="middle"
+  fontFamily={FONT} fontSize={360} fontWeight={800}
+  fill={COLORS.accent} opacity={enter * 0.08}>
   45
 </text>
-<text x={540} y={900} textAnchor="middle"
-  fontFamily="'Inter', system-ui, sans-serif"
-  fontSize={280} fontWeight={900}
-  fill={COLORS.deep_black}
-  opacity={enter}>
+{/* Main number */}
+<text x={540} y={1000} textAnchor="middle"
+  fontFamily={FONT} fontSize={300} fontWeight={800}
+  fill={COLORS.white} opacity={enter}>
   45
 </text>
-<text x={540} y={980} textAnchor="middle"
-  fontSize={52} fontWeight={500} fill={COLORS.cool_silver} opacity={enter}>
+<text x={540} y={1100} textAnchor="middle"
+  fontFamily={FONT} fontSize={56} fontWeight={800}
+  fill={COLORS.accent} opacity={enter}>
   MINUTES
 </text>
 ```
 
-### Pattern E — Code Block (Java series or technical concepts)
+### Pattern E — Code Block (Java / technical concept scenes)
 ```tsx
-// Monospace font block with left border
-<rect x={60} y={400} width={960} height={600} rx={8}
-  fill={COLORS.deep_black} fillOpacity={0.04}
-  stroke={COLORS.sky_blue} strokeWidth={0} />
-<rect x={60} y={400} width={6} height={600} rx={3} fill={COLORS.sky_blue} />
+// Bento card wrapping code block
+const FONT = "'Galaxie Copernicus ExtraBold', Georgia, serif";
 
+{/* Outer bento card */}
+<rect x={60} y={520} width={960} height={600} rx={20}
+  fill={COLORS.bg_secondary}
+  stroke={COLORS.accent} strokeWidth={2} />
+{/* Left accent bar */}
+<rect x={60} y={520} width={6} height={600} rx={3} fill={COLORS.accent} />
+
+{/* Code lines — monospace inside card */}
 {codeLines.map((line, i) => (
-  <text key={i} x={90} y={448 + i * 52}
+  <text key={i} x={100} y={588 + i * 56}
     fontFamily="'Fira Code', 'Courier New', monospace"
-    fontSize={32} fontWeight={400}
-    fill={line.isKeyword ? COLORS.sky_blue : COLORS.deep_black}>
+    fontSize={36} fontWeight={500}
+    fill={line.isKeyword ? COLORS.accent : COLORS.text_muted}>
     {line.text}
   </text>
 ))}
+```
+
+### Pattern F — Bento Grid (mixed tile sizes)
+```tsx
+// Feature bento: 1 large tile + 2 small tiles (Notion-style asymmetric grid)
+const FONT = "'Galaxie Copernicus ExtraBold', Georgia, serif";
+
+{/* Large feature tile — left (2/3 width) */}
+<g opacity={card1.opacity} transform={`translate(0, ${card1.translateY})`}>
+  <rect x={60} y={520} width={620} height={500} rx={20}
+    fill={COLORS.bg_secondary} stroke={COLORS.accent} strokeWidth={2} />
+  <text x={100} y={620} fontFamily={FONT} fontSize={56} fontWeight={800} fill={COLORS.white}>
+    Main Concept
+  </text>
+  <text x={100} y={690} fontFamily={FONT} fontSize={36} fontWeight={800} fill={COLORS.text_muted}>
+    Primary explanation text here
+  </text>
+</g>
+
+{/* Two small tiles — right column */}
+<g opacity={card2.opacity} transform={`translate(0, ${card2.translateY})`}>
+  <rect x={720} y={520} width={320} height={230} rx={20}
+    fill={COLORS.bg_secondary} stroke="rgba(255,255,255,0.1)" strokeWidth={1} />
+  <text x={760} y={620} fontFamily={FONT} fontSize={40} fontWeight={800} fill={COLORS.accent}>
+    Stat 01
+  </text>
+</g>
+<g opacity={card3.opacity} transform={`translate(0, ${card3.translateY})`}>
+  <rect x={720} y={790} width={320} height={230} rx={20}
+    fill={COLORS.bg_secondary} stroke="rgba(255,255,255,0.1)" strokeWidth={1} />
+  <text x={760} y={890} fontFamily={FONT} fontSize={40} fontWeight={800} fill={COLORS.white}>
+    Stat 02
+  </text>
+</g>
+
+{/* Bottom full-width tile */}
+<g opacity={card4.opacity} transform={`translate(0, ${card4.translateY})`}>
+  <rect x={60} y={1060} width={960} height={200} rx={20}
+    fill={COLORS.bg_secondary} stroke="rgba(255,255,255,0.1)" strokeWidth={1} />
+  <text x={100} y={1178} fontFamily={FONT} fontSize={44} fontWeight={800} fill={COLORS.text_muted}>
+    Supporting detail or key takeaway text
+  </text>
+</g>
 ```
 
 ---
@@ -1386,29 +1515,52 @@ Physics/Science:
 
 ### Illustration drawing rules
 ```
-1. Draw the illustration in ZONE C (y=460–1700)
+1. Draw the illustration in ZONE C (y=520–1740)
 2. Size: minimum 200×200px for a hero illustration; minimum 80×80px for supporting icons
-3. Color: use COLORS object only — primary accent for the series
-4. Animate: spring entrance (translateY) + path-draw for lines/paths
-5. Label: add text labels next to or inside the illustration (fontSize ≥ 32px)
-6. DO NOT use emoji characters — draw the shape with SVG primitives
-7. DO NOT use <image> or external SVG files — inline only
-8. If lucide-react has the icon, extract its path data and render as <path> in SVG
+3. Color: use COLORS object only — COLORS.accent for primary elements, COLORS.white for labels
+4. Background: place illustrations INSIDE bento cards (fill=COLORS.bg_secondary) or on dark bg
+5. Animate: spring entrance (translateY) + path-draw for lines/paths
+6. Label: add text labels next to or inside the illustration (fontFamily=Galaxie Copernicus ExtraBold, fontSize ≥ 32px)
+7. DO NOT use emoji characters — draw the shape with SVG primitives
+8. DO NOT use <image> or external SVG files — inline only
+9. If lucide-react has the icon, extract its path data and render as <path> in SVG
 ```
 
 ---
 
 ## PART 15 — SERIES-SPECIFIC CONFIGURATION
 
-| Series | totalDays | Primary accent | Secondary | Scroll series title |
+**ALL series share the same dark background (#1D1D1C) and Galaxie Copernicus ExtraBold font.**
+**Only the ACCENT COLOR changes per series. Set SERIES_ACCENT in timing.ts accordingly.**
+
+| Series | totalDays | SERIES_ACCENT hex | ACCENT_R,G,B | Scroll series title |
 |---|---|---|---|---|
-| AI | **120** | `sky_blue` (#2563EB) | `purple` (#7C3AED) | `"AGENTIC AI · FIRST PRINCIPLES"` |
-| Java | **105** | `orange` (#EA580C) | `sky_blue` (#2563EB) | `"NATIONAL RAILWAY · JAVA"` |
-| HiddenWorld / Daily Mystery | **100** | Series-dependent | — | `"HIDDEN WORLD SECRETS"` |
-| HiddenWorld 🎮 Gaming | 100 | `purple` (#7C3AED) | `sky_blue` | `"HIDDEN WORLD SECRETS"` |
-| HiddenWorld 🚀 Space | 100 | `sky_blue` (#2563EB) | `cool_silver` | `"HIDDEN WORLD SECRETS"` |
-| HiddenWorld 🏎️ Auto | 100 | `orange` (#EA580C) | `amber` | `"HIDDEN WORLD SECRETS"` |
-| HiddenWorld 🔭 Science | 100 | `green` (#16A34A) | `sky_blue` | `"HIDDEN WORLD SECRETS"` |
+| Java / National Railway | **105** | `#D87656` | `216,118,86` | `"NATIONAL RAILWAY · JAVA"` |
+| Agentic AI | **120** | `#76ABAE` | `118,171,174` | `"AGENTIC AI · FIRST PRINCIPLES"` |
+| System Design | **120** | `#948979` | `148,137,121` | `"SYSTEM DESIGN · FOUNDATIONS"` |
+| DSA | **120** | `#93B1A6` | `147,177,166` | `"DATA STRUCTURES & ALGORITHMS"` |
+| Mystery / HiddenWorld | **100** | `#F7374F` | `247,55,79` | `"MYSTERY RESOLVED · DAILY FACTS"` |
+
+### timing.ts snippet — set per series
+```typescript
+// At top of timing.ts, set these TWO values for the series being generated:
+const SERIES_ACCENT = '#76ABAE';                       // ← replace with correct hex
+const ACCENT_R = 118, ACCENT_G = 171, ACCENT_B = 174; // ← replace with correct RGB
+
+// Everything else in COLORS auto-calculates from these values
+```
+
+### Day counter format in Scene01 (pass as `totalDays` prop)
+```
+Java series:        <Scene01_ScrollTimeline currentDay={N} totalDays={105} seriesTitle="NATIONAL RAILWAY · JAVA" />
+AI series:          <Scene01_ScrollTimeline currentDay={N} totalDays={120} seriesTitle="AGENTIC AI · FIRST PRINCIPLES" />
+System Design:      <Scene01_ScrollTimeline currentDay={N} totalDays={120} seriesTitle="SYSTEM DESIGN · FOUNDATIONS" />
+DSA series:         <Scene01_ScrollTimeline currentDay={N} totalDays={120} seriesTitle="DATA STRUCTURES & ALGORITHMS" />
+Mystery/HiddenWorld:<Scene01_ScrollTimeline currentDay={N} totalDays={100} seriesTitle="MYSTERY RESOLVED · DAILY FACTS" />
+
+Displayed badge: "DAY 27 / 120" (large accent-colored number + muted total)
+Progress bar: fills left→right using accent color, animated frames 10→60
+```
 
 ### Day counter format in Scene01 (pass as `totalDays` prop)
 ```
@@ -1427,29 +1579,34 @@ Progress bar: fills from left, width = (currentDay/totalDays) × 960px, animated
 Before considering a day complete, verify every file:
 
 **timing.ts**
+- [ ] SERIES_ACCENT set to correct hex for the series (see PART 15)
+- [ ] ACCENT_R, ACCENT_G, ACCENT_B set to match SERIES_ACCENT
 - [ ] TOTAL_FRAMES calculated correctly: 150 + audio_frames + 30 + 120 + 362
 - [ ] Every scene has both `from` and `duration`
 - [ ] No `from` values overlap for adjacent scenes (gaps allowed, overlaps not)
 - [ ] CAPTIONS array has one entry per content scene
-- [ ] All COLORS entries present
+- [ ] All COLORS entries present (bg_primary, bg_secondary, white, text_primary, text_muted, text_caption, text_highlight, grid_line, accent, accent_dim, accent_mid)
 
 **components.tsx**
-- [ ] PaperBackground renders `#F5F0E8` rect + dot grain
-- [ ] Caption fixed at y=140 (TOP), center anchor x=540, no background rect
-- [ ] Caption `<text>` element has explicit `fill={COLORS.text_caption}` (NOT white, NOT missing)
-- [ ] Caption tspan key words use `fill={COLORS.text_highlight}` (#2563EB)
-- [ ] No caption text uses white, transparent, or bg_paper color
+- [ ] `DarkBackground` renders #1D1D1C rect + white grid lines (80px cells, rgba(255,255,255,0.5))
+- [ ] Caption fixed at y=1860 (BOTTOM), center anchor x=540, NO background rect
+- [ ] Caption `<text>` element has `fill={COLORS.text_caption}` (#FFFFFF — white)
+- [ ] Caption tspan key words use `fill={COLORS.text_highlight}` (series accent)
+- [ ] Caption font is `'Galaxie Copernicus ExtraBold', Georgia, serif`
+- [ ] `BentoCard` component exported (for scene use)
 - [ ] No gradient in any component
 
 **Scene01_ScrollTimeline.tsx**
+- [ ] Uses `DarkBackground` (NOT PaperBackground)
 - [ ] ALL_DAYS array contains every day from the architecture file
-- [ ] currentDay entry highlighted in sky_blue
-- [ ] ROW_H=220, VISIBLE=6, VIEW_Y=300
+- [ ] currentDay entry highlighted with `COLORS.accent`
+- [ ] ROW_H=220, VISIBLE=6
 - [ ] Clip path applied to scrolling rows
 - [ ] Scene fades out at frames 130–149
-- [ ] `totalDays` prop set correctly: AI=120, Java=105, HiddenWorld=100
-- [ ] "DAY N / TOTAL" badge renders at top-left (y≈90) with progress bar
-- [ ] Progress bar fills from left, animated frames 10→60
+- [ ] `totalDays` prop set correctly per PART 15 table
+- [ ] "DAY N / TOTAL" badge renders at top-left (y≈100) with progress bar
+- [ ] Progress bar uses `COLORS.accent`, animated frames 10→60
+- [ ] All text uses `'Galaxie Copernicus ExtraBold', Georgia, serif`
 
 **Scene count verification (do this BEFORE writing content scenes)**
 - [ ] Count phrase groups from CSV: N groups
@@ -1459,31 +1616,35 @@ Before considering a day complete, verify every file:
 - [ ] Only structural scenes exempt: Scene01 (scroll), Scene{N+2} (takeaway), Scene{N+3} (outro)
 
 **Every content scene**
-- [ ] `<PaperBackground />` is first SVG child
+- [ ] `<DarkBackground />` is first SVG child (NOT PaperBackground)
 - [ ] `<GlobalDefs />` is second SVG child (if using arrows)
-- [ ] No content element above y=220 (caption zone y=50–200 is reserved — top strip)
-- [ ] No content element below y=1880
-- [ ] Caption is present and uses CAPTIONS array
-- [ ] Caption text uses `fill={COLORS.text_caption}` (#1A1A1A) — NOT white, NOT missing
-- [ ] Caption key words use `fill={COLORS.text_highlight}` (#2563EB)
-- [ ] **Zone C contains ≥ 1 thematic SVG illustration** (train/agent/planet etc. — NOT just text boxes)
+- [ ] AbsoluteFill has `style={{ background: COLORS.bg_primary }}` (NOT bg_paper)
+- [ ] No content element above y=60
+- [ ] No content element below y=1740 (caption zone y=1760–1920 reserved at BOTTOM)
+- [ ] Caption is present and uses CAPTIONS array, positioned at y=1860 BOTTOM
+- [ ] Caption text uses `fill={COLORS.text_caption}` (#FFFFFF — white, NOT dark)
+- [ ] Caption key words use `fill={COLORS.text_highlight}` (series accent)
+- [ ] Caption font is `'Galaxie Copernicus ExtraBold', Georgia, serif`
+- [ ] **ALL text uses `'Galaxie Copernicus ExtraBold', Georgia, serif`** — NO Inter font
+- [ ] **Content tiles use BentoCard or bento-style rects (bg_secondary #2C2C2B, rx=20)**
+- [ ] **Zone C contains ≥ 1 thematic SVG illustration** (train/agent/planet etc.)
 - [ ] The SVG illustration is topic-relevant (see PART 14B vocabulary)
 - [ ] All colors from COLORS object
 - [ ] No gradient, no blur filter, no emoji
-- [ ] All font sizes ≥ 28px
+- [ ] All font sizes ≥ 32px
 - [ ] All `interpolate()` calls have `extrapolateRight: 'clamp'`
 - [ ] No overlapping bounding boxes
 - [ ] **Scene file is ≥ 300 lines** (count lines — if < 300, expand Zone C)
 - [ ] **≥ 3 animation phases** (reveal / content build / steady-state micro)
 - [ ] **`spring()` used for every major element entrance** (not plain interpolate)
-- [ ] **No "basic" fade-only animation** — every element has translateY + opacity + optional scale
+- [ ] **No "basic" fade-only animation** — every element has translateY + opacity
 - [ ] Diagrams use SVG path-draw (`strokeDashoffset`) not instant appear
 - [ ] Stagger delay between sibling elements is 10–14 frames (not all at once)
 
 **Scene.tsx**
 - [ ] Audio `<Sequence from={150}>` (not from={0})
 - [ ] All scenes have `premountFor={30}`
-- [ ] AbsoluteFill has `style={{ background: COLORS.bg_paper }}`
+- [ ] AbsoluteFill has `style={{ background: COLORS.bg_primary }}` (NOT bg_paper)
 
 **Root.tsx**
 - [ ] New composition registered with correct TOTAL_FRAMES
@@ -1643,10 +1804,12 @@ Before starting any chunk — whether it's chunk B of day 1 or chunk E of day 5 
 ║  4. If this is a content scene chunk: re-read the CSV        ║
 ║     for the specific phrase group being generated            ║
 ║                                                               ║
-║  5. Confirm the 6 critical rules from memory:                ║
-║     • Background = #F5F0E8 on EVERY scene                    ║
+║  5. Confirm the 7 critical rules from memory:                ║
+║     • Background = #1D1D1C dark + white grid on EVERY scene  ║
+║     • Font = Galaxie Copernicus ExtraBold on ALL text        ║
+║     • Accent = correct series color (PART 15 table)          ║
 ║     • Audio in <Sequence from={150}> NOT from={0}            ║
-║     • Caption at y=140 (TOP), NO background rect                  ║
+║     • Caption at y=1860 BOTTOM, white, Galaxie Copernicus    ║
 ║     • No gradient, no emoji, no CSS animation                ║
 ║     • premountFor={30} on every <Sequence>                   ║
 ║     • Every scene ≥ 300 lines, spring() on every entrance    ║
@@ -1679,9 +1842,9 @@ DAY [N] — "[Topic]" — CHUNK MAP
           ↓ ⟳ RE-READ FULL INSTRUCTIONS
 ┌─────────────────────────────────────────────────────────────────────┐
 │ CHUNK C — helpers/components.tsx                                    │
-│ Write: PaperBackground, GlobalDefs, Caption, CornerAccents,         │
-│        Divider, SectionLabel.                                       │
-│ Verify: Caption y=140 (TOP), no background rect, dot grain in paper.     │
+│ Write: DarkBackground (dark+grid), GlobalDefs, Caption (BOTTOM),   │
+│        BentoCard, CornerAccents, Divider, SectionLabel.             │
+│ Verify: Caption y=1860 BOTTOM, white, Galaxie Copernicus font.      │
 └─────────────────────────────────────────────────────────────────────┘
           ↓ ⟳ RE-READ FULL INSTRUCTIONS
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -1694,7 +1857,7 @@ DAY [N] — "[Topic]" — CHUNK MAP
 ┌─────────────────────────────────────────────────────────────────────┐
 │ CHUNK E — frames/Scene02 through Scene06                            │
 │ Write: first 5 content scenes (or fewer if day has ≤5 scenes).      │
-│ Each: PaperBackground first, correct zone layout, caption, no grad. │
+│ Each: DarkBackground first, bento layout, bottom caption, no grad.  │
 │ Verify each before next: bounding boxes, colors, font sizes.        │
 └─────────────────────────────────────────────────────────────────────┘
           ↓ ⟳ RE-READ FULL INSTRUCTIONS + RE-READ CSV phrases 6-10
@@ -1810,7 +1973,7 @@ Print final batch report
 ── CHUNK [LETTER] ── DAY [N] ── [description] ──────────────────────────
 ⟳ Reading .github/copilot-instructions.md ... done
 ⟳ Reading remotion-best-practices.md ... done
-⟳ Confirmed: #F5F0E8 background, audio frame 150, caption y=140 (TOP), no gradient
+⟳ Confirmed: #1D1D1C dark+grid bg, Galaxie Copernicus font, caption y=1860 BOTTOM, correct series accent, audio frame 150, no gradient
 Writing [filename] ...
 ```
 
@@ -1993,21 +2156,26 @@ Repeat this EXACT loop for each day, in order. Never skip a step.
 ║    Read: CSV for Day N (full transcript)                     ║
 ║                                                              ║
 ║  STEP 4.1 — WRITE helpers/timing.ts                         ║
+║    - Set SERIES_ACCENT to correct hex for this series        ║
+║    - Set ACCENT_R, ACCENT_G, ACCENT_B to match accent        ║
 ║    - SCENE_TIMING with all calculated from/duration values   ║
-║    - COLORS object (complete, all keys)                      ║
+║    - COLORS object (complete, all keys — dark theme)         ║
 ║    - CAPTIONS array (one per content scene)                  ║
 ║    - All animation helpers (fadeIn, fadeOut, easeSnap, etc.) ║
 ║    ✓ Verify: TOTAL_FRAMES = OUTRO_FROM + 362                 ║
 ║    ✓ Verify: all scene 'from' values are non-overlapping     ║
 ║    ✓ Verify: CAPTIONS length = number of content scenes      ║
+║    ✓ Verify: SERIES_ACCENT is correct for this series        ║
 ║                                                              ║
 ║  STEP 4.2 — WRITE helpers/components.tsx                     ║
-║    - PaperBackground (bg_paper rect + dot grain)             ║
-║    - GlobalDefs (arrow marker)                               ║
-║    - Caption (y=140 (TOP), no background, key-word highlighting)  ║
+║    - DarkBackground (#1D1D1C rect + white grid, 80px cells)  ║
+║    - GlobalDefs (arrow marker using accent color)            ║
+║    - Caption (y=1860 BOTTOM, white, Galaxie Copernicus)      ║
+║    - BentoCard (bg_secondary #2C2C2B, rx=20)                 ║
 ║    - CornerAccents, Divider, SectionLabel                    ║
-║    ✓ Verify: PaperBackground uses #F5F0E8                    ║
-║    ✓ Verify: Caption has NO background rect                  ║
+║    ✓ Verify: DarkBackground uses #1D1D1C + grid              ║
+║    ✓ Verify: Caption at BOTTOM y=1860, fill=white            ║
+║    ✓ Verify: All text uses Galaxie Copernicus ExtraBold      ║
 ║    ✓ Verify: No gradient in any component                    ║
 ║                                                              ║
 ║  STEP 4.3 — WRITE frames/Scene01_ScrollTimeline.tsx          ║
@@ -2021,37 +2189,40 @@ Repeat this EXACT loop for each day, in order. Never skip a step.
 ║                                                              ║
 ║  STEP 4.4 — WRITE frames/Scene02 through Scene{LAST-2}       ║
 ║    For each content scene:                                    ║
-║    - PaperBackground FIRST in SVG                            ║
+║    - DarkBackground FIRST in SVG (NOT PaperBackground)       ║
 ║    - GlobalDefs SECOND                                       ║
-║    - Zone A: SectionLabel (module name)                      ║
-║    - Zone B: headline (matches spoken phrase exactly)        ║
-║    - Zone C: visual diagram/layout                           ║
-║    - Caption at y=140 (TOP) with correct keyWords                 ║
-║    ✓ Verify: NO content element above y=220 or below y=1880  ║
+║    - Zone A: SectionLabel (module name, y≈160, accent color) ║
+║    - Zone B: headline (H1 100-120px, Galaxie Copernicus)     ║
+║    - Zone C: bento cards + thematic SVG illustration         ║
+║    - Caption at y=1860 BOTTOM, white, Galaxie Copernicus     ║
+║    ✓ Verify: NO content element above y=60 or below y=1740   ║
 ║    ✓ Verify: NO overlapping bounding boxes                   ║
 ║    ✓ Verify: NO gradient, glow, emoji                        ║
 ║    ✓ Verify: ALL colors from COLORS object                   ║
+║    ✓ Verify: ALL text uses Galaxie Copernicus ExtraBold      ║
+║    ✓ Verify: ALL bento cards use bg_secondary (#2C2C2B)      ║
 ║    ✓ Verify: Scene content matches CSV phrase exactly        ║
-║    ✓ Verify: All font sizes ≥ 28px                           ║
+║    ✓ Verify: All font sizes ≥ 32px                           ║
 ║                                                              ║
 ║  STEP 4.5 — WRITE frames/Scene{LAST-1}_KeyTakeaway.tsx       ║
-║    - Paper background                                        ║
+║    - DarkBackground (dark #1D1D1C + grid)                    ║
 ║    - Typographic summary of the day's core concept           ║
-║    - Main concept in sky_blue, large (72–96px)               ║
-║    - Supporting line in deep_black (44px)                    ║
+║    - Main concept in COLORS.accent (series accent), 96-120px ║
+║    - Supporting line in COLORS.white, Galaxie Copernicus     ║
 ║    - Duration: 120 frames                                    ║
 ║                                                              ║
 ║  STEP 4.6 — WRITE frames/Scene{LAST}_Outro.tsx               ║
-║    - Paper background                                        ║
-║    - Current day summary section                             ║
+║    - DarkBackground (dark #1D1D1C + grid)                    ║
+║    - Current day summary bento cards                         ║
 ║    - "TOMORROW" → Day N+1 topic (from architecture file)     ║
-║    - 3 key concepts from today                               ║
-║    - CTA text (no emoji, SVG arrow only)                     ║
+║    - 3 key concepts from today in bento tiles                ║
+║    - CTA text in COLORS.accent (no emoji, SVG arrow only)    ║
+║    - Galaxie Copernicus ExtraBold throughout                 ║
 ║    - Duration: 362 frames                                    ║
 ║    ✓ Verify: next day topic is CORRECT (re-check arch file)  ║
 ║                                                              ║
 ║  STEP 4.7 — WRITE Scene.tsx (orchestrator)                   ║
-║    - AbsoluteFill with background={COLORS.bg_paper}          ║
+║    - AbsoluteFill with background={COLORS.bg_primary}        ║
 ║    - Audio in <Sequence from={150}> NOT from={0}             ║
 ║    - ALL scenes listed with premountFor={30}                 ║
 ║    - TOTAL_FRAMES in file header comment                     ║
@@ -2125,10 +2296,13 @@ Series: [AI | Java | HiddenWorld]
 └─────┴──────────────────────────────────┴────────┴────────┴────────┘
 
 Root.tsx: Updated with X new compositions
-All backgrounds: ✅ #F5F0E8 paper
+All backgrounds: ✅ #1D1D1C dark + white grid
+Series accents:  ✅ correct accent per series
+Font:            ✅ Galaxie Copernicus ExtraBold everywhere
+Captions:        ✅ y=1860 (BOTTOM), white, Galaxie Copernicus ExtraBold
+Bento cards:     ✅ bg_secondary (#2C2C2B), rx=20
 No gradients:    ✅ verified
 No emojis:       ✅ verified
-Captions fixed:  ✅ y=140 (TOP), no background
 Audio delayed:   ✅ Sequence from={150} on all days
 
 Run: npm run dev — to preview in Remotion Studio
@@ -2152,8 +2326,10 @@ Before EVERY day (not just the first):
 
 #### Rule B — The Background Check
 ```
-The #1 most-forgotten rule in batch generation is the paper background.
-Every scene file you write: check that PaperBackground is the first SVG child.
+The #1 most-forgotten rule in batch generation is the dark background.
+Every scene file you write: check that DarkBackground is the first SVG child.
+Check that AbsoluteFill uses background: COLORS.bg_primary (NOT bg_paper).
+Check that ALL text uses 'Galaxie Copernicus ExtraBold', Georgia, serif.
 If you are unsure — re-read PART 11 of this file before continuing.
 ```
 
@@ -2202,10 +2378,11 @@ Never mark a day "complete" if any file is missing or empty.
 
 > **If you are mid-batch and unsure about any rule, paste this into your own context:**
 >
-> *"Re-read .github/copilot-instructions.md now. Pay attention to: PART 1 (fundamentals),
-> PART 4 (frame math), PART 5 (timing.ts template), PART 8 (scene boilerplate),
-> PART 11 (style rules), PART 16 (checklist), PART 20 (premium animation requirements).
-> Then continue with Day [N]."*
+> *"Re-read .github/copilot-instructions.md now. Pay attention to: PART 1 (fundamentals —
+> dark bg #1D1D1C, Galaxie Copernicus ExtraBold, caption at BOTTOM y=1860), PART 4 (frame math),
+> PART 5 (timing.ts COLORS template), PART 6 (DarkBackground + Caption components),
+> PART 8 (scene boilerplate), PART 11 (style rules), PART 15 (series accent colors),
+> PART 16 (checklist), PART 20 (premium animation requirements). Then continue with Day [N]."*
 
 ---
 
@@ -2518,6 +2695,7 @@ const borderDash = interpolate(frame, [cardDelay, cardDelay + 30], [PERIMETER, 0
 
 #### Multi-line headline with per-word spring
 ```tsx
+const FONT = "'Galaxie Copernicus ExtraBold', Georgia, serif";
 const words = ["Artificial", "Intelligence", "Loops"];
 words.map((word, i) => {
   const f = Math.max(0, frame - i * 8);
@@ -2526,11 +2704,11 @@ words.map((word, i) => {
   const op = interpolate(sp, [0, 0.4], [0, 1], { extrapolateRight: 'clamp' });
   return (
     <text key={i}
-      x={60} y={260 + i * 90}
+      x={60} y={300 + i * 110}
       opacity={op}
       transform={`translate(0, ${ty})`}
-      fontFamily="'Inter', sans-serif" fontSize={80} fontWeight={900}
-      fill={COLORS.deep_black}
+      fontFamily={FONT} fontSize={96} fontWeight={800}
+      fill={COLORS.white}
     >
       {word}
     </text>
@@ -2542,7 +2720,8 @@ words.map((word, i) => {
 
 ### 20.6 — ZONE C DENSITY RULES
 
-Zone C (y=460–1700) must use the full 1240px height. Do NOT leave large empty areas.
+Zone C (y=520–1740) must use at least 70% of the available 1220px height.
+Do NOT leave large empty areas. Use bento cards to fill the space.
 
 | Content type | Minimum elements in Zone C |
 |---|---|
@@ -2574,6 +2753,13 @@ All elements must be connected where logical — use SVG path-draw connectors, n
 ❌ Using CSS transition: or animation: anywhere
 ❌ Using @react-three/fiber, @remotion/three, or three.js — ALL 3D is FORBIDDEN
 ❌ Using ThreeCanvas or any WebGL/3D context
+❌ Using PaperBackground — replaced by DarkBackground
+❌ Using COLORS.bg_paper — old light theme, FORBIDDEN
+❌ Using fontFamily="'Inter', ..." — FORBIDDEN (use Galaxie Copernicus ExtraBold)
+❌ Caption at y=140 (top) — MUST be at y=1860 (bottom)
+❌ Dark caption text (#1A1A1A) on dark background — use white (#FFFFFF)
+❌ Content below y=1740 — caption zone starts there
+❌ Bento cards without rx=20 and bg_secondary fill
 ```
 
 ---
@@ -2583,21 +2769,22 @@ All elements must be connected where logical — use SVG path-draw connectors, n
 Every scene file must follow this section ordering:
 
 ```
-1. JSDoc block (6–10 lines) — includes animation phases description
+1. JSDoc block (6–10 lines) — includes animation phases description + series accent
 2. Imports — remotion + helpers + any premium library
-3. SPRING_CONFIG constants (copy from 20.3.A — all 4)
-4. Helper functions (useSpringEntrance, usePathDraw, useCounter, etc.)
-5. Export component function
-   5a. useCurrentFrame() + fps constant
-   5b. Phase 1 spring variables (all labeled with phase comment)
-   5c. Phase 2 spring variables (staggered, labeled)
-   5d. Phase 3 micro-animation variables (sin/cos/pulse, labeled)
-   5e. Counter variables (if used)
-   5f. Caption lookup
-   5g. return JSX
-      - AbsoluteFill with bg_paper background
+3. const FONT = "'Galaxie Copernicus ExtraBold', Georgia, serif"  ← mandatory
+4. SPRING_CONFIG constants (copy from 20.3.A — all 4)
+5. Helper functions (useSpringEntrance, usePathDraw, useCounter, etc.)
+6. Export component function
+   6a. useCurrentFrame() + fps constant
+   6b. Phase 1 spring variables (all labeled with phase comment)
+   6c. Phase 2 spring variables (staggered, labeled)
+   6d. Phase 3 micro-animation variables (sin/cos/pulse, labeled)
+   6e. Counter variables (if used)
+   6f. Caption lookup
+   6g. return JSX
+      - AbsoluteFill with bg_primary background (NOT bg_paper)
       - <svg> root
-      - PaperBackground (FIRST)
+      - DarkBackground as first child (NOT PaperBackground)
       - GlobalDefs (SECOND, always)
       - Zone A (section label with spring entrance)
       - Zone B (headline with per-word spring)

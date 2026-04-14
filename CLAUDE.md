@@ -35,9 +35,20 @@ Every file is chunk-based (PART 18). Every chunk starts with a full instruction 
 |---|---|
 | Framework | Remotion 4.0 + React 19 + TypeScript |
 | Canvas | 1080 × 1920 px portrait, 30 fps |
-| Background | `#F5F0E8` warm paper — EVERY scene |
+| Background | `#1D1D1C` dark (Claude-style) + white grid — EVERY scene |
+| Font | **`'Galaxie Copernicus ExtraBold', Georgia, serif`** — EVERY text element, EVERY scene |
 | Audio | Must be in `public/` for `staticFile()` |
 | Package manager | npm |
+
+### SERIES AUTO-DETECTION — accent color is set automatically by series name
+
+| Series | Accent Color | Scroll Title |
+|---|---|---|
+| Java / National Railway | `#D87656` | `"NATIONAL RAILWAY · JAVA"` |
+| Agentic AI | `#76ABAE` | `"AGENTIC AI · FIRST PRINCIPLES"` |
+| System Design | `#948979` | `"SYSTEM DESIGN · FOUNDATIONS"` |
+| DSA | `#93B1A6` | `"DATA STRUCTURES & ALGORITHMS"` |
+| Mystery / HiddenWorld | `#F7374F` | `"MYSTERY RESOLVED · DAILY FACTS"` |
 
 ---
 
@@ -144,28 +155,35 @@ const enter = interpolate(frame - SCENE_TIMING.s02.from, [0, 20], [0, 1], ...);
 // frame is already local — subtracting from is double-counting
 ```
 
-### FIX 8 — Caption uses SVG text, not HTML div
+### FIX 8 — Caption uses SVG text at BOTTOM, Galaxie Copernicus ExtraBold, white
 
 ```tsx
-// ✅ CORRECT — caption is SVG <text> element inside the SVG
-<text x={540} y={1780} textAnchor="middle"
-  fontFamily="'Inter', system-ui, sans-serif"
-  fontSize={38} fontWeight={700}
-  fill={COLORS.text_caption}
+// ✅ CORRECT — caption at BOTTOM (y=1860), white, Galaxie Copernicus ExtraBold
+<text x={540} y={1860} textAnchor="middle"
+  fontFamily="'Galaxie Copernicus ExtraBold', Georgia, serif"
+  fontSize={44} fontWeight={800}
+  fill={COLORS.text_caption}   // #FFFFFF — white on dark bg
   opacity={captionOpacity}>
   Caption text here
 </text>
 
-// ❌ WRONG — HTML div caption breaks layout on paper background
+// ❌ WRONG — old top-positioned caption
+<text x={540} y={140} ...>Caption</text>
+
+// ❌ WRONG — HTML div caption
 <div style={{ position: 'absolute', bottom: 140, ... }}>Caption</div>
+
+// ❌ WRONG — Inter font (always use Galaxie Copernicus ExtraBold)
+<text fontFamily="'Inter', system-ui, sans-serif" ...>
 ```
 
 ### FIX 9 — No gradient anywhere
 
 ```tsx
-// ✅ CORRECT — solid flat fill
-<rect fill={COLORS.sky_blue} />
-<rect fill={COLORS.bg_paper} />
+// ✅ CORRECT — solid flat fill using COLORS object
+<rect fill={COLORS.accent} />
+<rect fill={COLORS.bg_primary} />
+<rect fill={COLORS.bg_secondary} />
 
 // ❌ WRONG — gradients are FORBIDDEN
 <defs><linearGradient id="g">...</linearGradient></defs>
@@ -181,28 +199,33 @@ public/day_23_audio.wav    → staticFile('day_23_audio.wav')  ✅
 src/Instructions/audio/    → NOT accessible via staticFile   ❌
 ```
 
-### FIX 11 — Caption text must always be near-black (NEVER white)
+### FIX 11 — Caption text must always be WHITE on dark background
 
-The paper background is `#F5F0E8` (warm off-white). Any white or light caption text
-becomes **invisible**. This is the most common subtitle visibility failure.
+The background is `#1D1D1C` (dark). Caption text **must be white** (`#FFFFFF`).
+Any dark caption text becomes **invisible**. This is the most common subtitle visibility failure.
 
 ```tsx
-// ✅ CORRECT — explicit dark fill on parent text element
+// ✅ CORRECT — white text at BOTTOM (y=1860), Galaxie Copernicus ExtraBold
 <text
-  x={540} y={1780} textAnchor="middle"
-  fontFamily="'Inter', system-ui, sans-serif"
-  fontSize={38} fontWeight={700}
-  fill={COLORS.text_caption}   // ← #1A1A1A — REQUIRED, always explicit
+  x={540} y={1860} textAnchor="middle"
+  fontFamily="'Galaxie Copernicus ExtraBold', Georgia, serif"
+  fontSize={44} fontWeight={800}
+  fill={COLORS.text_caption}   // ← #FFFFFF — white on dark background
 >
   <tspan fill={COLORS.text_caption}>Normal word </tspan>
-  <tspan fill={COLORS.text_highlight}>highlighted</tspan>  // ← #2563EB
+  <tspan fill={COLORS.text_highlight}>highlighted</tspan>  // ← series accent color
 </text>
 
-// ❌ WRONG — white or missing fill (invisible on off-white background)
-<text fill="white">...</text>
-<text fill="#FFFFFF">...</text>
-<text fill={COLORS.bg_paper}>...</text>   // same as white
-<text>...</text>  // no fill = inherits white in some renderers
+// ❌ WRONG — dark text (invisible on dark background)
+<text fill="#1A1A1A">...</text>
+<text fill="black">...</text>
+<text fill={COLORS.deep_black}>...</text>   // dark on dark = invisible
+
+// ❌ WRONG — old top position
+<text x={540} y={140} ...>...</text>
+
+// ❌ WRONG — Inter font
+<text fontFamily="'Inter', system-ui, sans-serif" ...>
 ```
 
 Always use the `Caption` component from `helpers/components.tsx`. Never write raw caption
@@ -222,26 +245,28 @@ HiddenWorld      → draw the specific subject (planets, cars, cells, circuits, 
 See PART 14B of `.github/copilot-instructions.md` for the full vocabulary with SVG shapes.
 
 ```tsx
-// ✅ CORRECT — scene about a train station draws the station
+// ✅ CORRECT — scene about a train station draws the station (inside bento card)
+const FONT = "'Galaxie Copernicus ExtraBold', Georgia, serif";
 <g transform="translate(60, 600)" opacity={card1.opacity}>
+  {/* Bento card wrapping illustration */}
+  <rect x={0} y={0} width={960} height={400} rx={20} fill={COLORS.bg_secondary}
+    stroke={COLORS.accent} strokeWidth={2} />
   {/* Station building */}
-  <rect x={0} y={0} width={960} height={200} rx={8} fill={COLORS.bg_paper}
-    stroke={COLORS.orange} strokeWidth={2.5} />
+  <rect x={40} y={40} width={880} height={200} rx={8} fill="rgba(255,255,255,0.05)"
+    stroke={COLORS.accent} strokeWidth={2} />
   {/* Roof triangle */}
-  <polygon points="480,0 0,160 960,160" fill={COLORS.orange} fillOpacity={0.12} />
-  {/* Platform */}
-  <rect x={-20} y={200} width={1000} height={24} fill={COLORS.deep_black} fillOpacity={0.08} />
+  <polygon points="480,40 40,200 920,200" fill={COLORS.accent} fillOpacity={0.12} />
   {/* Rails */}
-  <line x1={100} y1={224} x2={860} y2={224} stroke={COLORS.cool_silver} strokeWidth={3} />
-  <line x1={100} y1={240} x2={860} y2={240} stroke={COLORS.cool_silver} strokeWidth={3} />
+  <line x1={100} y1={265} x2={860} y2={265} stroke={COLORS.text_muted} strokeWidth={3} />
+  <line x1={100} y1={285} x2={860} y2={285} stroke={COLORS.text_muted} strokeWidth={3} />
   {/* Label */}
-  <text x={480} y={110} textAnchor="middle" fontSize={48} fontWeight={800}
-    fill={COLORS.deep_black} fontFamily="'Inter', sans-serif">CENTRAL STATION</text>
+  <text x={480} y={150} textAnchor="middle" fontSize={48} fontWeight={800}
+    fill={COLORS.white} fontFamily={FONT}>CENTRAL STATION</text>
 </g>
 
-// ❌ WRONG — just a colored box with text
-<rect x={60} y={600} width={960} height={200} fill={COLORS.orange} fillOpacity={0.1} />
-<text x={80} y={700} fontSize={36} fill={COLORS.deep_black}>Train Station</text>
+// ❌ WRONG — old paper background + Inter font
+<rect x={0} y={0} width={960} height={200} fill={COLORS.bg_paper} ... />
+<text fontFamily="'Inter', sans-serif" fill={COLORS.deep_black}>CENTRAL STATION</text>
 ```
 
 ### FIX 13 — Scene count must exactly match CSV phrase groups
@@ -323,11 +348,11 @@ Word Index | Word | Start Time (s) | End Time (s) | Duration (s) | Start Timesta
 src/Day{N}/
 ├── Scene.tsx                     (orchestrator — imports all scenes)
 ├── helpers/
-│   ├── timing.ts                 (SCENE_TIMING, COLORS, CAPTIONS, helpers)
-│   └── components.tsx            (PaperBackground, Caption, GlobalDefs, etc.)
+│   ├── timing.ts                 (SCENE_TIMING, COLORS with series accent, CAPTIONS, helpers)
+│   └── components.tsx            (DarkBackground+grid, Caption@bottom, BentoCard, GlobalDefs, etc.)
 └── frames/
-    ├── Scene01_ScrollTimeline.tsx (150 frames, SILENT, shows day list)
-    ├── Scene02_{Name}.tsx         (first audio scene, frame 150+)
+    ├── Scene01_ScrollTimeline.tsx (150 frames, SILENT, dark theme, series accent)
+    ├── Scene02_{Name}.tsx         (first audio scene, frame 150+, bento design)
     ├── Scene03_{Name}.tsx
     ├── ...
     ├── Scene{N-1}_KeyTakeaway.tsx (120 frames)
@@ -336,50 +361,78 @@ src/Day{N}/
 public/audio/
     ai{N}.wav       (AI series — must be here for staticFile to work)
     java{N}.wav     (Java series)
-    day{N}_*.wav    (HiddenWorld)
+    day{N}_*.wav    (HiddenWorld/Mystery)
 ```
 
 ---
 
-## COLOR PALETTE (use ONLY these)
+## COLOR PALETTE (use ONLY these — dark Claude-style theme)
 
 ```typescript
+// ── Series accent map — look up by series name ─────────────────────────────────
+// Java / National Railway : '#D87656'  (warm coral-orange)
+// Agentic AI              : '#76ABAE'  (teal-blue)
+// System Design           : '#948979'  (warm stone)
+// DSA                     : '#93B1A6'  (sage green)
+// Mystery / HiddenWorld   : '#F7374F'  (vibrant red)
+// Replace ACCENT_COLOR below with the correct value for the series being generated.
+
+const SERIES_ACCENT = '#76ABAE'; // ← REPLACE with correct series accent
+const ACCENT_DIM    = 'rgba(118,171,174,0.12)'; // ← update alpha channel value if accent changes
+
 export const COLORS = {
-  bg_paper:       '#F5F0E8',   // background — EVERY scene
-  deep_black:     '#1A1A1A',   // text, outlines
-  sky_blue:       '#2563EB',   // primary accent
-  green:          '#16A34A',   // success, secondary
-  orange:         '#EA580C',   // energy, speed
-  brown:          '#92400E',   // structural warmth
-  amber:          '#D97706',   // engineering
-  cool_silver:    '#94A3B8',   // secondary text
-  vibrant_red:    '#DC2626',   // errors only
-  purple:         '#7C3AED',   // AI/neural
-  text_caption:   '#1A1A1A',   // caption normal
-  text_highlight: '#2563EB',   // caption key words
+  // Backgrounds
+  bg_primary:     '#1D1D1C',              // THE ONLY background — EVERY scene, zero exceptions
+  bg_secondary:   '#2C2C2B',              // bento card / tile background
+  bg_card:        '#2C2C2B',              // alias for bg_secondary
+
+  // Text (light on dark)
+  white:          '#FFFFFF',              // primary text on dark background
+  text_primary:   '#FFFFFF',              // body/heading text
+  text_muted:     'rgba(255,255,255,0.55)', // secondary/muted labels
+  text_caption:   '#FFFFFF',              // subtitle text at BOTTOM
+  text_highlight: SERIES_ACCENT,          // key word highlight in captions
+
+  // Grid lines
+  grid_line:      'rgba(255,255,255,0.5)', // grid on dark background (50% white)
+
+  // Series accent
+  accent:         SERIES_ACCENT,          // primary accent color (series-specific)
+  accent_dim:     ACCENT_DIM,             // accent at ~12% opacity for card fills
+  accent_mid:     'rgba(118,171,174,0.30)', // accent at 30% for borders/dividers
+
+  // Semantic aliases (for backwards compat with old code)
+  deep_black:     '#1D1D1C',              // maps to bg_primary
+  cool_silver:    'rgba(255,255,255,0.55)', // maps to text_muted
+  vibrant_red:    '#F7374F',              // error/danger (also Mystery series accent)
 } as const;
 ```
 
+**CRITICAL: When generating for a specific series, update `SERIES_ACCENT` and `ACCENT_DIM`
+in `timing.ts` to match the series accent from the table above.**
+
 ---
 
-## CAPTION FIXED SPECIFICATION (TOP POSITION)
+## CAPTION FIXED SPECIFICATION (BOTTOM POSITION)
 
 ```
 x:             540 (center anchor)
-y:             140 (TOP — single line)  |  116 / 164 (TOP — two lines, 48px gap)
+y:             1860 (BOTTOM — single line)  |  1836 / 1884 (BOTTOM — two lines, 48px gap)
 textAnchor:    "middle"
-fontSize:      38
-fontWeight:    700
-fontFamily:    'Inter', system-ui, sans-serif
+fontSize:      44
+fontWeight:    800
+fontFamily:    'Galaxie Copernicus ExtraBold', Georgia, serif
 Background:    NONE — zero rect, zero box, zero outline
-Key words:     fill={COLORS.text_highlight} (#2563EB)
-Normal words:  fill={COLORS.text_caption} (#1A1A1A)
-Max chars/ln:  52
-Position:      TOP of canvas — NOT bottom
+Key words:     fill={COLORS.text_highlight} (series accent color)
+Normal words:  fill={COLORS.text_caption} (#FFFFFF — white)
+Max chars/ln:  48
+Position:      BOTTOM of canvas — NOT top
 
-Caption zone:  y=50–200 (TOP STRIP — reserved, no content elements here)
-Content zone:  y=220–1880 (below caption strip, before bottom edge)
+Caption zone:  y=1760–1920 (BOTTOM STRIP — reserved, no content elements here)
+Content zone:  y=60–1740 (above caption strip, below top edge)
 ```
+
+**The caption is NOW AT THE BOTTOM. Never place it at y=140 again.**
 
 ---
 
@@ -387,15 +440,18 @@ Content zone:  y=220–1880 (below caption strip, before bottom edge)
 
 | Rule | Enforcement |
 |---|---|
-| Paper background `#F5F0E8` on EVERY scene | ABSOLUTE |
-| No gradients | ABSOLUTE |
+| **Dark background `#1D1D1C` + white grid on EVERY scene** | ABSOLUTE |
+| **Font: `'Galaxie Copernicus ExtraBold', Georgia, serif` on EVERY text element** | ABSOLUTE |
+| **Caption at BOTTOM (y=1860), white `#FFFFFF`, Galaxie Copernicus ExtraBold** | ABSOLUTE |
+| **Caption text: always `#FFFFFF` (white), never dark or transparent** | ABSOLUTE |
+| **Content zone y=60–1740 only (caption strip y=1760–1920 reserved at BOTTOM)** | ABSOLUTE |
+| **Accent color auto-set from series: Java=#D87656 / AI=#76ABAE / SysDesign=#948979 / DSA=#93B1A6 / Mystery=#F7374F** | ABSOLUTE |
+| **Bento card background: `#2C2C2B` (bg_secondary) for all card tiles** | ABSOLUTE |
+| No gradients anywhere | ABSOLUTE |
 | No glow / blur filters | ABSOLUTE |
 | No emojis | ABSOLUTE |
-| No pure white (#FFF) backgrounds | ABSOLUTE |
-| All text ≥ 28px | ABSOLUTE |
-| **Caption at TOP (y=140), no background — NOT at bottom** | ABSOLUTE |
-| **Caption text: always `#1A1A1A`, never white or transparent** | ABSOLUTE |
-| **Caption `<text>` must have explicit `fill={COLORS.text_caption}`** | ABSOLUTE |
+| No pure black (#000) or old paper white (#F5F0E8) backgrounds | ABSOLUTE |
+| All text ≥ 32px | ABSOLUTE |
 | **No 3D animations — strictly 2D SVG + spring() only** | ABSOLUTE |
 | **No @react-three/fiber, @remotion/three, or three.js** | ABSOLUTE |
 | No CSS transitions/animations | ABSOLUTE |
@@ -405,10 +461,10 @@ Content zone:  y=220–1880 (below caption strip, before bottom edge)
 | **Illustrations must match series topic (train/AI/etc.)** | ABSOLUTE |
 | Audio in Sequence from={150} | ABSOLUTE |
 | premountFor={30} on all Sequences | ABSOLUTE |
-| Content y=220–1880 only (caption strip y=50–200 reserved at TOP) | ABSOLUTE |
 | Colors only from COLORS object | ABSOLUTE |
 | **Scene count = CSV phrase groups exactly (no extras)** | ABSOLUTE |
 | **Run `npm run build` after every day — 0 errors required** | ABSOLUTE |
+| **No pencil-art or paper-texture style — dark Claude-style only** | ABSOLUTE |
 
 ---
 
@@ -416,14 +472,13 @@ Content zone:  y=220–1880 (below caption strip, before bottom edge)
 
 ```
 y=0    ← canvas top
-y=50   ← caption zone begins (TOP STRIP)
-y=140  ← caption baseline — single line
-y=116  ← caption first line (two-line mode)
-y=164  ← caption second line (two-line mode)
-y=200  ← caption zone ends
-y=220  ← content zone begins (Zone A — section label)
-y=220–1880 ← full content zone (1660px usable height)
-y=1880 ← bottom content boundary
+y=60   ← content zone begins
+y=60–1740 ← full content zone (1680px usable height)
+y=1740 ← bottom content boundary (stop all content here)
+y=1760 ← caption zone begins (BOTTOM STRIP)
+y=1836 ← caption first line (two-line mode)
+y=1860 ← caption baseline — single line
+y=1884 ← caption second line (two-line mode)
 y=1920 ← canvas bottom
 
 x=0    ← canvas left
@@ -432,10 +487,14 @@ x=1020 ← content right margin
 x=1080 ← canvas right
 Usable width: 960px
 
+Zone A:  y=60–200   (section label / series badge)
+Zone B:  y=220–500  (main headline — H1, large text)
+Zone C:  y=520–1740 (visual content — diagrams, bento cards, illustrations)
+
 Scene01 day counter:
-  "DAY N / TOTAL" badge at x=60, y=90 (top-left)
-  Progress bar:   x=60, y=110, animated left→right
-  Totals:         AI=120, Java=105, HiddenWorld=100
+  "DAY N / TOTAL" badge at x=60, y=100 (top-left)
+  Progress bar:   x=60, y=120, animated left→right
+  Totals:         AI=120, Java=105, HiddenWorld/Mystery=100, SysDesign=120, DSA=120
 ```
 
 ---
@@ -459,14 +518,21 @@ Scene01 day counter:
 - [ ] Re-read `src/Instructions/remotion-best-practices.md`
 - [ ] Re-read CSV phrases for the current chunk's scenes
 - [ ] Confirm: Audio in `<Sequence from={150}>`, never `from={0}`
-- [ ] Confirm: `PaperBackground` is FIRST SVG child in every scene
-- [ ] Confirm: Caption at `y=140` TOP (NOT bottom, NOT y=1780), no background rect
-- [ ] Confirm: Caption text fill = `#1A1A1A` (NOT white, NOT missing)
+- [ ] Confirm: `DarkBackground` is FIRST SVG child in every scene (NOT PaperBackground)
+- [ ] Confirm: Background is `#1D1D1C` (NOT `#F5F0E8` paper — that is OLD/FORBIDDEN)
+- [ ] Confirm: White grid lines rendered inside DarkBackground component
+- [ ] Confirm: Caption at `y=1860` BOTTOM (NOT top, NOT y=140)
+- [ ] Confirm: Caption font = `'Galaxie Copernicus ExtraBold', Georgia, serif`
+- [ ] Confirm: Caption text fill = `#FFFFFF` (white — NOT dark, NOT missing)
+- [ ] Confirm: ALL text uses `'Galaxie Copernicus ExtraBold', Georgia, serif`
+- [ ] Confirm: Accent color = correct series color from SERIES AUTO-DETECTION table
+- [ ] Confirm: Card backgrounds use `COLORS.bg_secondary` (#2C2C2B) — bento style
 - [ ] Confirm: Every content scene has a thematic SVG illustration (see PART 14B)
 - [ ] Confirm: Scene count matches CSV phrase groups exactly
 - [ ] Confirm: No gradient, no emoji, no CSS animation anywhere
 - [ ] Confirm: No 3D — all animation is 2D SVG + spring() only
 - [ ] Confirm: Scene01 shows "DAY N / TOTAL" badge with progress bar
+- [ ] Confirm: No pencil style / no paper texture style
 - [ ] After CHUNK J: run `npm run build` and fix all errors before ✅
 
 ---
@@ -487,11 +553,15 @@ This covers: animations, audio, sequencing, fonts, captions, transitions, charts
 | Animation not rendering | CSS transition used | Replace with `interpolate()` |
 | Black flicker frames | Missing `premountFor` | Add `premountFor={30}` to Sequence |
 | Scene frame out of sync | Used composition frame inside scene | Use local `frame` from `useCurrentFrame()` only |
-| White/wrong background | Missing PaperBackground | Add `<PaperBackground />` as first SVG child |
-| Caption overlap with content | Content in caption zone (y=50–200) | Move content to y≥220; caption zone is TOP strip y=50–200 |
-| **White subtitle on white background** | Missing or white `fill` on caption `<text>` | Add explicit `fill={COLORS.text_caption}` (#1A1A1A) to `<text>` element; use Caption component |
+| **Light/white background instead of dark** | Missing DarkBackground or wrong bg color | Add `<DarkBackground />` as first SVG child; AbsoluteFill `background: COLORS.bg_primary` |
+| **Old paper background (#F5F0E8)** | Copied from old code | Replace with `#1D1D1C` everywhere |
+| Caption not visible | Dark text on dark background | Use `fill={COLORS.text_caption}` (#FFFFFF) — white on dark |
+| Caption at wrong position (top) | Old y=140 positioning | Move to y=1860 (BOTTOM); caption zone y=1760–1920 |
+| Content overlapping caption (bottom) | Content extends past y=1740 | Limit all content to y=60–1740 |
+| Wrong font family | Using Inter or other font | Use `'Galaxie Copernicus ExtraBold', Georgia, serif` everywhere |
 | Gradient visible | Used linearGradient | Remove gradient, use solid fill |
 | Text clipped at edge | Content beyond x=60 or x=1020 | Respect left/right margins |
+| Wrong accent color for series | Used wrong series color | Look up series from SERIES AUTO-DETECTION table and set accent |
 | Wrong audio duration | Read wrong CSV field | Use `End Time (s)` of LAST row |
 | Scenes overlap in timeline | `from` values miscalculated | Verify: each scene.from ≥ prev.from + prev.duration |
 | **Only text/boxes, no illustrations** | Missing thematic SVG | Add topic-relevant SVG illustration to Zone C (see FIX 12 + PART 14B) |
