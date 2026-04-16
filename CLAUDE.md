@@ -282,19 +282,31 @@ const FONT = "'Galaxie Copernicus ExtraBold', Georgia, serif";
 <text fontFamily="'Inter', sans-serif" fill={COLORS.deep_black}>CENTRAL STATION</text>
 ```
 
-### FIX 13 — Scene count must exactly match CSV phrase groups (NO structural scenes)
+### FIX 13 — Scene count: MINIMUM 20 SCENES, generate as many as possible (NON-NEGOTIABLE)
 
-Do NOT add any scenes without a corresponding CSV phrase.
+⚠️ **HARD MINIMUM: 20 CONTENT SCENES PER DAY — ABSOLUTELY NON-NEGOTIABLE** ⚠️
+⚠️ **GENERATE AS MANY SCENES AS POSSIBLE — MORE IS ALWAYS BETTER** ⚠️
+
 NO ScrollTimeline. NO KeyTakeaway. NO Outro. ALL scenes are content scenes.
 
 ```
-CSV produces 14 phrase groups → generate exactly 14 content scenes (Scene01–Scene14)
-Total files: 14 scene files only (no scroll, no takeaway, no outro)
+CSV phrase groups → MINIMUM 20 content scenes (Scene01–Scene{N})
+If CSV produces fewer than 20 groups → SPLIT existing groups further at clause boundaries
+Split aggressively: every comma, pause, and clause boundary is a split opportunity
+A day with < 20 scenes is REJECTED — must be regenerated
+
+Target counts:
+  60–90s audio  → 20–30 scenes
+  90–120s audio → 24–35 scenes
+  Any duration  → NEVER fewer than 20
 
 ❌ Do NOT generate Scene01_ScrollTimeline.tsx
 ❌ Do NOT generate any KeyTakeaway scene
 ❌ Do NOT generate any Outro scene
-❌ Do NOT add any scene without a CSV phrase
+❌ Do NOT merge phrases to reduce scene count
+❌ A day with < 20 scenes is a FAILED generation
+✅ Split every long phrase at its internal clause boundary
+✅ Every distinct concept, definition, example = its own scene
 ```
 
 ### FIX 14 — Rebuild the app after every video generation
@@ -477,7 +489,9 @@ Content zone:  y=60–1740 (above caption strip, below top edge)
 | Audio: `<Audio startFrom={0} />` — NO Sequence wrapper, plays from frame 0 | ABSOLUTE |
 | premountFor={30} on all Sequences | ABSOLUTE |
 | Colors only from COLORS object | ABSOLUTE |
-| **Scene count = CSV phrase groups exactly (no structural scenes)** | ABSOLUTE |
+| **Scene count: MINIMUM 20 SCENES per day — generate AS MANY AS POSSIBLE (non-negotiable)** | ABSOLUTE |
+| **A day with < 20 scenes is REJECTED — split aggressively at every clause boundary** | ABSOLUTE |
+| **Every scene file MUST be ≥ 300 lines of code — ZERO EXCEPTIONS, NO SHORTCUTS** | ABSOLUTE |
 | **No ScrollTimeline, no KeyTakeaway, no Outro** | ABSOLUTE |
 | **Run `npm run build` after every day — 0 errors required** | ABSOLUTE |
 | **No pencil-art or paper-texture style — dark near-black only** | ABSOLUTE |
@@ -543,7 +557,8 @@ Zone C:  y=520–1740 (visual content — MASSIVE SVG illustrations fill this zo
 - [ ] Confirm: Card backgrounds use `COLORS.bg_secondary` (#1A1A1A) — bento style
 - [ ] Confirm: Every scene has a MASSIVE SVG illustration (700×600px+ in Zone C)
 - [ ] Confirm: Illustration is detailed and topic-specific (not generic placeholder)
-- [ ] Confirm: Scene count = CSV phrase groups exactly (no structural scenes)
+- [ ] Confirm: Scene count ≥ 20 scenes per day (HARD MINIMUM — non-negotiable, generate as many as possible)
+- [ ] Confirm: Every scene file is ≥ 300 lines of code (MINIMUM — zero exceptions, no shortcuts)
 - [ ] Confirm: No gradient, no emoji, no CSS animation anywhere
 - [ ] Confirm: No 3D — all animation is 2D SVG + spring() only
 - [ ] Confirm: No pencil style / no paper texture style

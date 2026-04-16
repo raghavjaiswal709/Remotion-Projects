@@ -979,16 +979,23 @@ function groupToSceneTiming(group: Word[], sceneIndex: number) {
 }
 ```
 
-**Minimum scene counts:**
+**Minimum scene counts — STRICT NON-NEGOTIABLE FLOOR:**
 | Audio duration | Min content scenes |
 |---|---|
-| < 30s | 6 |
-| 30–60s | 10 |
-| 60–90s | 14 |
-| 90–120s | 18 |
-| > 120s | 22+ |
+| < 30s | 20 |
+| 30–60s | 20 |
+| 60–90s | 20 |
+| 90–120s | 24 |
+| > 120s | 28+ |
 
-When in doubt — **split**. Never merge two distinct concepts.
+> **ABSOLUTE MINIMUM: 20 SCENES PER DAY — THIS IS NON-NEGOTIABLE.**
+> Generate AS MANY scenes as possible. More scenes = better quality. Never merge phrases
+> when you can split them. Every pause, comma, or clause boundary is a split opportunity.
+> If the CSV produces fewer than 20 groups from strict parsing, SPLIT existing groups further
+> at internal clause boundaries until you reach at least 20 scenes.
+> A day with 18 scenes is a FAILED generation. A day with 25+ scenes is CORRECT.
+
+When in doubt — **split**. Split aggressively. Never merge two distinct concepts.
 
 ---
 
@@ -1382,9 +1389,10 @@ Use `<Folder>` to organize series:
 - DO NOT create scenes for things not in the script
 - The CSV transcript is the ONLY source for scene content
 
-### Scene count = phrase group count — EXACT MATCH (no extras, no structural)
+### Scene count — MINIMUM 20 SCENES, GENERATE AS MANY AS POSSIBLE (NON-NEGOTIABLE)
 ```
-Content scenes = exact number of CSV phrase groups. NO MORE. NO LESS.
+⚠️  HARD MINIMUM: 20 CONTENT SCENES PER DAY — ABSOLUTELY NON-NEGOTIABLE ⚠️
+⚠️  GENERATE AS MANY SCENES AS POSSIBLE — MORE IS ALWAYS BETTER  ⚠️
 
 NO STRUCTURAL SCENES:
   ❌ NO Scene01_ScrollTimeline — REMOVED
@@ -1392,15 +1400,25 @@ NO STRUCTURAL SCENES:
   ❌ NO Outro scene — REMOVED
 
 All scenes are content scenes (Scene01 → Scene{N}):
-  ✅ Exactly 1 scene per CSV phrase group
+  ✅ MINIMUM 20 scenes per day — no exceptions, no excuses
   ✅ Scene01 = first CSV phrase (audio frame 0)
   ✅ Scene{N} = last CSV phrase (ends at TOTAL_FRAMES)
-  ❌ DO NOT add any scene with no corresponding CSV phrase
-  ❌ DO NOT add "bonus" scenes for sub-topics not in the CSV
+  ✅ SPLIT AGGRESSIVELY at every sentence, clause, comma pause
+  ✅ If CSV strict parsing yields < 20 groups → further subdivide existing groups
+     at internal clause boundaries (comma, colon, dash, subordinate clause break)
+  ✅ A 20-word phrase with a comma in the middle = 2 scenes
+  ✅ Every distinct concept, definition, example = its own scene
+
+SCENE COUNT ENFORCEMENT:
+  ❌ DO NOT merge phrases to reduce scene count — always prefer more scenes
+  ❌ A day with < 20 scenes is REJECTED and must be regenerated
+  ✅ Target: 20–30 scenes for 60–90s audio
+  ✅ Target: 24–35 scenes for 90–120s audio
 
 Counting rule:
-  If CSV parsing produces 14 phrase groups → write Scene01 through Scene14 (14 scenes)
-  Total scene files: 14 (= 14 content scenes, nothing else)
+  CSV parsing produces N phrase groups → split further until count ≥ 20
+  If CSV produces 25 groups naturally → write all 25 (never merge down to fewer)
+  Total scene files: always ≥ 20 content scenes
 ```
 
 ### Thematic SVG illustration — MANDATORY MASSIVE in EVERY content scene
@@ -1707,7 +1725,7 @@ When something is unclear, do NOT ask. Use the rule in the right column.
 |---|---|
 | Audio file not in `src/Instructions/audio/` | Check `public/audio/`. If neither exists, create a placeholder `timing.ts` comment: `// AUDIO MISSING: place ai{N}.wav in public/audio/` and continue |
 | CSV file not found | Create `timing.ts` with `// CSV MISSING: place ai{N}_word_by_word_transcript.csv in src/Instructions/` and generate 10 placeholder scenes from the architecture file topic |
-| Unsure how many scenes | Use the minimum from PART 10 table based on audio duration. When no CSV: 14 scenes default |
+| Unsure how many scenes | MINIMUM 20 SCENES — always. Split aggressively. When no CSV: generate 20 placeholder scenes from the architecture file topic, one per sub-concept |
 | Topic text unclear | Use the EXACT text from the architecture file. Do not paraphrase or shorten |
 | Next-day topic not in architecture | Write `// Day N+1 topic pending` in Outro and continue |
 | Scene content ambiguous | Use the EXACT CSV phrase words. Do not elaborate or add context |
@@ -2472,24 +2490,44 @@ Writing src/Day29/helpers/timing.ts ... done
 
 > **This PART is mandatory reading before writing ANY scene file.**
 > Basic animation is REJECTED. Every scene must be premium quality with ≥ 300 lines of code.
+> **⚠️ 300 LINES PER SCENE IS NON-NEGOTIABLE. NO EXCEPTIONS. NO SHORTCUTS. ⚠️**
 
 ---
 
-### 20.1 — THE 300-LINE HARD RULE
+### 20.1 — THE 300-LINE HARD RULE (STRICTLY ENFORCED, ZERO TOLERANCE)
 
 ```
-Every scene file (except Scene01_ScrollTimeline.tsx) MUST be ≥ 300 lines of code.
+⚠️  EVERY SCENE FILE MUST BE ≥ 300 LINES OF CODE — ZERO EXCEPTIONS ⚠️
+⚠️  THIS IS THE SINGLE MOST IMPORTANT TECHNICAL REQUIREMENT ⚠️
 
-After writing each file, count its lines.
-If the count is < 300:
-  → Expand Zone C with more diagram elements
-  → Add Phase 3 micro-animations (pulse, float, shimmer)
-  → Add more staggered sub-items to existing cards
-  → Add SVG path-draw connectors between elements
-  → Add a counter animation or number tick-up
-  → Never pad with blank lines or comments — pad with real visual content
+Every scene file (ALL content scenes) MUST be ≥ 300 lines of code.
+This means EVERY file from Scene01 through Scene{N} — no scene is exempt.
 
-This is a non-negotiable minimum. A 180-line scene is a FAILED scene.
+After writing each file, COUNT THE LINES before moving to the next.
+If the count is < 300 — STOP. Do NOT proceed. Expand the scene first:
+  → Add more bento cards with detailed content in Zone C
+  → Add Phase 3 micro-animations (pulse, float, shimmer, breathing)
+  → Add more staggered sub-items (6–8 items, not 3)
+  → Add SVG path-draw connectors between ALL diagram elements
+  → Add counter animations or number tick-up sequences
+  → Add per-word spring animations on headline text
+  → Add animated border draw (strokeDashoffset) on every card
+  → Add parallax depth layers (3+ layers moving at different rates)
+  → Add floating accent circles with Math.sin oscillation
+  → Add typewriter effect on key terms
+  → Never pad with blank lines or comments — pad with REAL visual content
+
+LINE COUNT CHECKPOINTS (these are MINIMUMS, not targets):
+  200 lines → FAILED — severely incomplete, rebuild entirely
+  250 lines → FAILED — needs major expansion
+  280 lines → FAILED — add at least 2 more animation phases
+  300 lines → PASSING MINIMUM — acceptable but not ideal
+  350+ lines → GOOD — rich visual content
+  400+ lines → EXCELLENT — premium quality
+
+A 180-line scene is a CRITICALLY FAILED scene — do not submit it.
+A 250-line scene is a FAILED scene — expand before proceeding.
+A 300-line scene is the BARE MINIMUM — always aim for more.
 ```
 
 ---
