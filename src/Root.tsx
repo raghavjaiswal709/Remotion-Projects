@@ -6,6 +6,9 @@ import { AiDay29Scene } from "./AiDay29/Scene";
 import { JavaDay38Scene } from "./JavaDay38/Scene";
 import { JavaDay39Scene } from "./JavaDay39/Scene";
 import { JavaDay40Scene } from "./JavaDay40/Scene";
+import { JavaDay41Scene } from "./JavaDay41/Scene";
+import { JavaDay42Scene } from "./JavaDay42/Scene";
+import { JavaDay43Scene } from "./JavaDay43/Scene";
 import "./style.css";
 
 export const RemotionRoot: React.FC = () => {
@@ -58,6 +61,30 @@ export const RemotionRoot: React.FC = () => {
         id="JavaDay40"
         component={JavaDay40Scene}
         durationInFrames={2729}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="JavaDay41"
+        component={JavaDay41Scene}
+        durationInFrames={3502}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="JavaDay42"
+        component={JavaDay42Scene}
+        durationInFrames={3173}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="JavaDay43"
+        component={JavaDay43Scene}
+        durationInFrames={3236}
         fps={30}
         width={1080}
         height={1920}
