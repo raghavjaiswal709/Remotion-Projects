@@ -18,6 +18,8 @@ import { AiDay30Scene } from "./AiDay30/Scene";
 import { AiDay31Scene } from "./AiDay31/Scene";
 import { AiDay32Scene } from "./AiDay32/Scene";
 import { Day33Scene as AiDay33Scene } from "./AiDay33/Scene";
+import { AiDay34Scene } from "./AiDay34/Scene";
+import { AiDay35Scene } from "./AiDay35/Scene";
 import "./style.css";
 
 export const RemotionRoot: React.FC = () => {
@@ -76,6 +78,23 @@ export const RemotionRoot: React.FC = () => {
         id="AiDay33"
         component={AiDay33Scene}
         durationInFrames={2675}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+
+      <Composition
+        id="AiDay34"
+        component={AiDay34Scene}
+        durationInFrames={2660}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="AiDay35"
+        component={AiDay35Scene}
+        durationInFrames={2388}
         fps={30}
         width={1080}
         height={1920}
